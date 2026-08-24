@@ -649,10 +649,18 @@ router.get('/demo-orgs', (req, res) => {
  */
 router.post('/claims/submit-demo', async (req, res) => {
   try {
-    const { projectName, region, tonnage, methodology, parentClaimId, demoOrgId } = req.body;
+    const { projectName, region, tonnage, methodology, parentClaimId, demoOrgId, targetProjectId } = req.body;
 
-    if (!projectName || !region || tonnage === undefined || !methodology || !demoOrgId) {
+    if (parentClaimId && targetProjectId) {
+      return res.status(400).json({ error: "parentClaimId and targetProjectId are mutually exclusive" });
+    }
+
+    if (!targetProjectId && (!projectName || !region || tonnage === undefined || !methodology || !demoOrgId)) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    if (targetProjectId && (tonnage === undefined || !demoOrgId)) {
+      return res.status(400).json({ error: "Missing tonnage or demoOrgId" });
     }
 
     const demoOrg = demoOrgs.find(org => org.id.toLowerCase() === demoOrgId.toLowerCase());
@@ -661,7 +669,9 @@ router.post('/claims/submit-demo', async (req, res) => {
     }
 
     let projectId;
-    let projectType = methodology;
+    let finalProjectName = projectName;
+    let finalRegion = region;
+    let finalProjectType = methodology;
     let parentHash = null;
     let version = 1;
     let parentClaim = null;
@@ -679,9 +689,23 @@ router.post('/claims/submit-demo', async (req, res) => {
       }
 
       projectId = parentClaim.projectId;
+      finalProjectName = parentClaim.projectName;
+      finalRegion = parentClaim.region;
       parentHash = parentClaim.hash;
       version = parentClaim.version + 1;
-      projectType = parentClaim.projectType; // Lock type to match parent
+      finalProjectType = parentClaim.projectType; // Lock type to match parent
+    } else if (targetProjectId) {
+      const existingClaims = await db.findClaims({ projectId: targetProjectId });
+      if (!existingClaims || existingClaims.length === 0) {
+        return res.status(404).json({ error: `Project ID ${targetProjectId} not found` });
+      }
+      const baseClaim = existingClaims[0];
+      projectId = targetProjectId;
+      finalProjectName = baseClaim.projectName;
+      finalRegion = baseClaim.region;
+      finalProjectType = baseClaim.projectType;
+      parentHash = null;
+      version = 1;
     } else {
       projectId = "DEMO-" + Math.floor(100000 + Math.random() * 900000);
     }
@@ -692,9 +716,9 @@ router.post('/claims/submit-demo', async (req, res) => {
 
     const claimPayload = {
       projectId,
-      projectName,
-      region,
-      projectType,
+      projectName: finalProjectName,
+      region: finalRegion,
+      projectType: finalProjectType,
       tonnage: Number(tonnage),
       orgId: demoOrg.id,
       parentHash: parentHash
@@ -733,9 +757,9 @@ router.post('/claims/submit-demo', async (req, res) => {
     await db.saveClaim({
       claimId,
       projectId,
-      projectName,
-      region,
-      projectType,
+      projectName: finalProjectName,
+      region: finalRegion,
+      projectType: finalProjectType,
       tonnage: Number(tonnage),
       orgId: demoOrg.id,
       hash,
@@ -747,7 +771,7 @@ router.post('/claims/submit-demo', async (req, res) => {
       anchored: anchorResult.anchored,
       blockchainMode: anchorResult.mode,
       timestamp: Date.now(),
-      notes: parentClaimId ? "Dynamic Web Correction" : "Dynamic Web Initial Claim"
+      notes: parentClaimId ? "Dynamic Web Correction" : (targetProjectId ? "Dispute Test Claim" : "Dynamic Web Initial Claim")
     });
 
     // 8. Check/resolve disputes

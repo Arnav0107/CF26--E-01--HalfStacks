@@ -6,6 +6,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   const [orgs, setOrgs] = useState([]);
   
   // Form fields
+  const [submissionType, setSubmissionType] = useState('initial'); // 'initial' | '__dispute__'
+  const [targetProjectId, setTargetProjectId] = useState('');
   const [projectName, setProjectName] = useState('');
   const [region, setRegion] = useState('');
   const [tonnage, setTonnage] = useState('');
@@ -47,8 +49,40 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
       });
   }, [API_URL]);
 
+  // Deduplicate claims by projectId to get the list of existing projects
+  const uniqueProjects = [];
+  const projectIds = new Set();
+  claims.forEach(c => {
+    if (!projectIds.has(c.projectId)) {
+      projectIds.add(c.projectId);
+      uniqueProjects.push(c);
+    }
+  });
+
+  // Populate/lock fields when target project changes in dispute mode
+  useEffect(() => {
+    if (submissionType === '__dispute__' && targetProjectId) {
+      const proj = claims.find(c => c.projectId === targetProjectId);
+      if (proj) {
+        setProjectName(proj.projectName);
+        setRegion(proj.region);
+        setMethodology(proj.projectType);
+      }
+    } else if (submissionType === 'initial') {
+      setProjectName('');
+      setRegion('');
+      setMethodology('REDD+ / Forestry');
+    }
+  }, [submissionType, targetProjectId, claims]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (submissionType === '__dispute__' && !targetProjectId) {
+      setError("Please select a target project to dispute.");
+      return;
+    }
+
     if (!projectName || !region || !tonnage || !demoOrgId) {
       setError("Please fill out all required fields.");
       return;
@@ -64,7 +98,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
       tonnage: Number(tonnage),
       methodology,
       demoOrgId,
-      parentClaimId: null // Always null for new claims
+      parentClaimId: null,
+      targetProjectId: submissionType === '__dispute__' ? targetProjectId : null
     };
 
     try {
@@ -159,6 +194,46 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Submission Type Option */}
+          <div>
+            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Submission Type
+            </label>
+            <select
+              value={submissionType}
+              onChange={(e) => {
+                setSubmissionType(e.target.value);
+                setTargetProjectId('');
+              }}
+              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+            >
+              <option value="initial">Initial Registry Entry (New Project)</option>
+              <option value="__dispute__">Independent Claim on Existing Project (Dispute Test)</option>
+            </select>
+          </div>
+
+          {/* Target Project Select (Visible only for dispute testing) */}
+          {submissionType === '__dispute__' && (
+            <div>
+              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Target Project to Dispute
+              </label>
+              <select
+                value={targetProjectId}
+                onChange={(e) => setTargetProjectId(e.target.value)}
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+                required
+              >
+                <option value="">-- Choose Existing Project --</option>
+                {uniqueProjects.map(p => (
+                  <option key={p.projectId} value={p.projectId}>
+                    {p.projectName} ({p.projectId} - {p.region})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Project Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -169,8 +244,9 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
+                disabled={submissionType === '__dispute__'}
                 placeholder="e.g. Amazon Rainforest Conservation"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
                 required
               />
             </div>
@@ -182,8 +258,9 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
+                disabled={submissionType === '__dispute__'}
                 placeholder="e.g. Brazil"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
                 required
               />
             </div>
@@ -210,7 +287,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
               <select
                 value={methodology}
                 onChange={(e) => setMethodology(e.target.value)}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                disabled={submissionType === '__dispute__'}
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-55"
               >
                 {methodologies.map(m => (
                   <option key={m} value={m}>{m}</option>

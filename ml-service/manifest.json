@@ -1,0 +1,108 @@
+{
+  "cleanClaims": [
+    "seed-claim-001",
+    "seed-claim-002",
+    "seed-claim-003",
+    "seed-claim-013",
+    "seed-claim-014",
+    "seed-claim-015",
+    "seed-claim-016",
+    "seed-claim-017",
+    "seed-claim-019",
+    "seed-claim-020",
+    "seed-claim-022",
+    "seed-claim-023"
+  ],
+  "correctionChains": [
+    {
+      "originalClaimId": "seed-claim-027",
+      "correctedClaimId": "seed-correct-001",
+      "versions": [
+        "seed-claim-027",
+        "seed-correct-001"
+      ],
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "7.84%"
+    },
+    {
+      "originalClaimId": "seed-claim-026",
+      "correctedClaimId": "seed-correct-002",
+      "versions": [
+        "seed-claim-026",
+        "seed-correct-002"
+      ],
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "6.25%"
+    },
+    {
+      "originalClaimId": "seed-claim-010",
+      "correctedClaimId": "seed-correct-003",
+      "versions": [
+        "seed-claim-010",
+        "seed-correct-003"
+      ],
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "5.86%"
+    },
+    {
+      "originalClaimId": "seed-claim-033",
+      "correctedClaimId": "seed-correct-004",
+      "versions": [
+        "seed-claim-033",
+        "seed-correct-004"
+      ],
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "4.33%"
+    },
+    {
+      "originalClaimId": "seed-claim-009",
+      "correctedClaimId": "seed-correct-005",
+      "versions": [
+        "seed-claim-009",
+        "seed-correct-005"
+      ],
+      "notes": "Audited satellite imagery baseline adjustment",
+      "deltaPercent": "-3.82%"
+    },
+    {
+      "originalClaimId": "seed-claim-007",
+      "correctedClaimId": "seed-correct-006",
+      "versions": [
+        "seed-claim-007",
+        "seed-correct-006"
+      ],
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "3.81%"
+    },
+    {
+      "originalClaimId": "seed-claim-021",
+      "correctedClaimId": "seed-correct-007",
+      "versions": [
+        "seed-claim-021",
+        "seed-correct-007"
+      ],
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "7.14%"
+    }
+  ],
+  "disputedClaims": [
+    {
+      "projectId": "OWID-ANG-2023",
+      "projectName": "Angola National GHG Reduction Goal (2023)",
+      "originalClaimId": "seed-claim-018",
+      "disputedClaimId": "seed-dispute-001",
+      "originalTonnage": 2167500,
+      "disputedTonnage": 1578800,
+      "deltaPercent": "-27.16%"
+    },
+    {
+      "projectId": "OWID-ALG-2021",
+      "projectName": "Algeria National GHG Reduction Goal (2021)",
+      "originalClaimId": "seed-claim-012",
+      "disputedClaimId": "seed-dispute-002",
+      "originalTonnage": 18203600,
+      "disputedTonnage": 15207774,
+      "deltaPercent": "-16.46%"
+    }
+  ]
+}

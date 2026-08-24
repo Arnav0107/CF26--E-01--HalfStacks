@@ -1,0 +1,26 @@
+# Dependency directories
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Local databases & keys
+backend/db_claims.json
+backend/db_orgs.json
+ml-service/keystore.json
+
+# Build directories
+frontend/dist/
+contracts/out/
+contracts/cache/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

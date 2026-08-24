@@ -11,7 +11,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   const [tonnage, setTonnage] = useState('');
   const [methodology, setMethodology] = useState('REDD+ / Forestry');
   const [demoOrgId, setDemoOrgId] = useState('');
-  const [parentClaimId, setParentClaimId] = useState('');
 
   // States
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +35,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
     fetch(`${API_URL}/demo-orgs`)
       .then(res => res.json())
       .then(data => {
-        // Handle array wrapper if present
         const orgList = data.value || data;
         setOrgs(orgList);
         if (orgList.length > 0) {
@@ -48,29 +46,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
         setError("Could not load demo organizations from backend.");
       });
   }, [API_URL]);
-
-  // Handle parent claim selection (locking details to enforce correction integrity)
-  useEffect(() => {
-    if (parentClaimId) {
-      const parent = claims.find(c => c.claimId === parentClaimId);
-      if (parent) {
-        setProjectName(parent.projectName);
-        setRegion(parent.region);
-        setMethodology(parent.projectType);
-        setDemoOrgId(parent.orgId); // Corrections must be submitted by the same organization
-      }
-    } else {
-      setProjectName('');
-      setRegion('');
-      setMethodology('REDD+ / Forestry');
-      if (orgs.length > 0) {
-        setDemoOrgId(orgs[0].id);
-      }
-    }
-  }, [parentClaimId, claims, orgs]);
-
-  // Filter list of claims available for correction (only active/disputed claims can be corrected)
-  const correctableClaims = claims.filter(c => c.status === 'active' || c.status === 'disputed');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,7 +64,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
       tonnage: Number(tonnage),
       methodology,
       demoOrgId,
-      parentClaimId: parentClaimId || null
+      parentClaimId: null // Always null for new claims
     };
 
     try {
@@ -173,7 +148,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
       <div>
         <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-white/5 pb-4 mb-4">
           <FilePlus className="h-5 w-5 text-brand-500" />
-          Submit Environmental Claim
+          Register Environmental Claim
         </h2>
 
         {error && (
@@ -184,25 +159,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Target Correction Option */}
-          <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Submission Type
-            </label>
-            <select
-              value={parentClaimId}
-              onChange={(e) => setParentClaimId(e.target.value)}
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
-            >
-              <option value="">Initial Registry Entry (New Project)</option>
-              {correctableClaims.map(c => (
-                <option key={c.claimId} value={c.claimId}>
-                  Correction to {c.projectName} ({c.claimId} - v{c.version})
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Project Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -213,9 +169,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                disabled={!!parentClaimId}
                 placeholder="e.g. Amazon Rainforest Conservation"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -227,9 +182,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                disabled={!!parentClaimId}
                 placeholder="e.g. Brazil"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -256,8 +210,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
               <select
                 value={methodology}
                 onChange={(e) => setMethodology(e.target.value)}
-                disabled={!!parentClaimId}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
               >
                 {methodologies.map(m => (
                   <option key={m} value={m}>{m}</option>
@@ -274,8 +227,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
             <select
               value={demoOrgId}
               onChange={(e) => setDemoOrgId(e.target.value)}
-              disabled={!!parentClaimId} // corrections must preserve original submitting address
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-55"
+              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
             >
               {orgs.map(org => (
                 <option key={org.id} value={org.id}>
@@ -283,11 +235,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 </option>
               ))}
             </select>
-            {parentClaimId && (
-              <span className="text-[10px] text-slate-500 mt-1 block">
-                * Locked to original publisher to enforce correction rights.
-              </span>
-            )}
           </div>
 
           <div className="p-3 bg-white/5 border border-white/10 rounded-lg flex items-start gap-2 text-3xs text-slate-400 font-mono">

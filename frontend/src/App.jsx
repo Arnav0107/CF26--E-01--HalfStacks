@@ -6,6 +6,7 @@ import ClaimTimeline from './components/ClaimTimeline';
 import DisputesPanel from './components/DisputesPanel';
 import TamperLab from './components/TamperLab';
 import SubmitClaimForm from './components/SubmitClaimForm';
+import UpdateClaimForm from './components/UpdateClaimForm';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -188,6 +189,17 @@ export default function App() {
                 <PlusCircle className="h-4 w-4" />
                 Submit Claim
               </button>
+              <button
+                onClick={() => setActiveTab('update')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'update' 
+                    ? 'bg-brand-500 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <GitCommit className="h-4 w-4" />
+                Update Claim
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -217,6 +229,17 @@ export default function App() {
               )}
               {activeTab === 'submit' && (
                 <SubmitClaimForm 
+                  claims={claims} 
+                  onSuccessSubmit={(newClaimId) => {
+                    fetchData();
+                    setSelectedClaimId(newClaimId);
+                    setActiveTab('directory');
+                  }}
+                  API_URL={API_URL} 
+                />
+              )}
+              {activeTab === 'update' && (
+                <UpdateClaimForm 
                   claims={claims} 
                   onSuccessSubmit={(newClaimId) => {
                     fetchData();

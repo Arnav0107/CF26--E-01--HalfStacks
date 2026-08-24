@@ -20,7 +20,8 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (claim) => {
+    const status = claim.status;
     switch (status) {
       case 'active':
         return (
@@ -29,10 +30,18 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
           </span>
         );
       case 'superseded':
+        const nextClaim = claims.find(c => c.parentClaimId === claim.claimId);
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/25">
-            Superseded
-          </span>
+          <div className="flex flex-col gap-1 items-start">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/25">
+              Superseded
+            </span>
+            {nextClaim && (
+              <span className="text-[10px] text-slate-500 font-mono font-semibold italic">
+                → superseded by v{nextClaim.version}
+              </span>
+            )}
+          </div>
         );
       case 'disputed':
         return (
@@ -146,7 +155,7 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1 items-start">
-                          {getStatusBadge(claim.status)}
+                          {getStatusBadge(claim)}
                           <MockWarningBadge anchored={claim.anchored} mode={claim.blockchainMode} />
                         </div>
                       </td>

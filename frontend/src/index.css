@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Geist+Mono:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,37 +6,188 @@
 
 @layer base {
   body {
-    @apply bg-dark-900 text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white;
+    background: 
+      radial-gradient(ellipse at 88% 25%, rgba(130, 175, 245, 0.20) 0%, transparent 55%),
+      radial-gradient(ellipse at 15% 85%, rgba(122, 16, 40, 0.04) 0%, transparent 40%),
+      linear-gradient(150deg, #FAFAFA 0%, #FFFFFF 55%, #F5F8FF 100%);
+    background-color: #FAFAFA;
+    background-attachment: fixed;
+    @apply text-navy antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  ::selection {
+    background: #7A1028;
+    color: #FFFFFF;
   }
 }
 
-/* Glassmorphism utility classes */
-.glass {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* ─── Typography Utilities ─────────────────────────────────────── */
+.font-brand {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+}
+.font-body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.font-mono-data {
+  font-family: 'Geist Mono', monospace;
 }
 
-.glass-hover:hover {
-  background: rgba(31, 41, 55, 0.8);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 0 15px rgba(34, 197, 94, 0.1);
+/* ─── Clean Card System ────────────────────────────────────────── */
+.clean-card, .glass, .glass-module, .glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(22, 119, 232, 0.12);
+  box-shadow: 0 4px 20px -2px rgba(23, 42, 99, 0.04), 0 2px 6px -1px rgba(23, 42, 99, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-emerald {
-  background: rgba(6, 78, 59, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+.clean-card-hover:hover, .glass-hover:hover, .glass-card:hover {
+  border-color: rgba(22, 119, 232, 0.25);
+  box-shadow: 0 10px 25px -3px rgba(23, 42, 99, 0.07), 0 4px 12px -2px rgba(23, 42, 99, 0.03);
+  transform: translateY(-2px);
 }
 
-.glass-red {
-  background: rgba(153, 27, 27, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+/* Accent Card Borders */
+.card-maroon-tint {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(122, 16, 40, 0.18);
+  box-shadow: 0 4px 16px -2px rgba(122, 16, 40, 0.03);
 }
 
-.glass-yellow {
-  background: rgba(146, 64, 14, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.25);
+.card-blue-tint {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(22, 119, 232, 0.18);
+  box-shadow: 0 4px 16px -2px rgba(22, 119, 232, 0.03);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.btn-maroon, .btn-primary {
+  background: #7A1028;
+  color: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border-radius: 9999px;
+  padding: 0.625rem 1.75rem;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 8px rgba(122, 16, 40, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-maroon:hover, .btn-primary:hover {
+  background: #5E0B1D;
+  box-shadow: 0 4px 14px rgba(122, 16, 40, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-outline-maroon, .btn-ghost {
+  background: #FFFFFF;
+  color: #7A1028;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  border-radius: 9999px;
+  border: 1px solid #E5E7EB;
+  padding: 0.625rem 1.75rem;
+  font-size: 0.8125rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 4px rgba(23, 42, 99, 0.02);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-outline-maroon:hover, .btn-ghost:hover {
+  border-color: rgba(122, 16, 40, 0.35);
+  background: #FDF2F4;
+  color: #5E0B1D;
+  transform: translateY(-1px);
+}
+
+/* ─── Search & Form Inputs ─────────────────────────────────────── */
+.clean-search {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 9999px;
+  color: #172A63;
+  font-size: 0.8125rem;
+  padding: 0.5rem 1rem 0.5rem 2.25rem;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 2px rgba(23, 42, 99, 0.02);
+}
+
+.clean-search::placeholder {
+  color: #5E6B8A;
+  opacity: 0.8;
+}
+
+.clean-search:focus {
+  border-color: #1677E8;
+  box-shadow: 0 0 0 3px rgba(22, 119, 232, 0.12);
+}
+
+/* ─── Navigation Link ─────────────────────────────────────────── */
+.nav-clean-link {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #7A1028;
+  transition: color 0.15s ease;
+  position: relative;
+}
+
+.nav-clean-link:hover {
+  color: #5E0B1D;
+}
+
+.nav-clean-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background: #7A1028;
+  transition: width 0.2s ease;
+}
+
+.nav-clean-link:hover::after {
+  width: 100%;
+}
+
+/* ─── Soft Animations ─────────────────────────────────────────── */
+@keyframes jellyfish-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0.5deg);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+.animate-jellyfish-subtle {
+  animation: jellyfish-float 8s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 4s ease-in-out infinite;
 }
 
 /* Custom Scrollbar */
@@ -44,16 +195,13 @@
   width: 6px;
   height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: #FAF9F7;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
+  background: #CBD5E1;
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #94A3B8;
 }

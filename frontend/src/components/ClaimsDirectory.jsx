@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, ShieldCheck, HelpCircle, FileText, ChevronRight } from 'lucide-react';
+import { Search, Filter, ShieldCheck, FileText, ChevronRight } from 'lucide-react';
 import MockWarningBadge from './MockWarningBadge';
 
 export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId }) {
@@ -25,7 +25,7 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
     switch (status) {
       case 'active':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#EAF2FC] text-[#1677E8] border border-[#1677E8]/20">
             Active
           </span>
         );
@@ -33,25 +33,25 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
         const nextClaim = claims.find(c => c.parentClaimId === claim.claimId);
         return (
           <div className="flex flex-col gap-1 items-start">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/25">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-[#5E6B8A] border border-slate-200">
               Superseded
             </span>
             {nextClaim && (
-              <span className="text-[10px] text-slate-500 font-mono font-semibold italic">
-                → superseded by v{nextClaim.version}
+              <span className="text-[10px] text-[#5E6B8A] font-mono font-medium">
+                → v{nextClaim.version}
               </span>
             )}
           </div>
         );
       case 'disputed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/25 animate-pulse">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
             Disputed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/25">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
             Unknown
           </span>
         );
@@ -59,115 +59,139 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
   };
 
   return (
-    <div className="glass rounded-xl border border-white/5 shadow-xl overflow-hidden h-full flex flex-col">
-      <div className="p-5 border-b border-white/5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="bg-white/95 rounded-2xl border border-[#E2E8F0] shadow-clean p-6 flex flex-col h-full">
+      {/* Header & Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#EAF2FC]">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <FileText className="h-5 w-5 text-brand-500" />
+          <h2 className="text-xl font-bold font-sans text-[#172A63] flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-[#1677E8]" />
             Environmental Claims Directory
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Displaying citable claims registered on the environmental data network.
+          <p className="text-xs text-[#5E6B8A] font-sans mt-0.5">
+            Immutable registry of verified carbon offset claims and audit trails.
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 md:w-60">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+        {/* Filter controls */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#5E6B8A]/60" />
             <input
               type="text"
-              placeholder="Search project, ID, claim..."
+              placeholder="Search claims..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-dark-800 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 transition-colors"
+              className="clean-search w-52 text-xs py-1.5 pl-8 pr-3"
             />
           </div>
 
-          <div className="flex items-center bg-dark-800 border border-white/10 rounded-lg px-3 py-2 text-sm">
-            <Filter className="h-4 w-4 text-slate-400 mr-2" />
+          {/* Status selector */}
+          <div className="flex items-center gap-1.5 bg-[#FAF9F7] px-2.5 py-1.5 rounded-full border border-[#E2E8F0]">
+            <Filter className="h-3 w-3 text-[#5E6B8A]" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent text-slate-200 focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs text-[#172A63] font-medium focus:outline-none cursor-pointer"
             >
-              <option value="all">All States</option>
+              <option value="all">All Records</option>
               <option value="active">Active Only</option>
-              <option value="disputed">Disputed Only</option>
-              <option value="superseded">Superseded Only</option>
+              <option value="disputed">Disputed</option>
+              <option value="superseded">Superseded</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Directory Grid/Table */}
-      <div className="flex-1 overflow-y-auto max-h-[500px]">
+      {/* Claims List Table */}
+      <div className="flex-1 overflow-x-auto mt-4">
         {filteredClaims.length === 0 ? (
-          <div className="p-8 text-center text-slate-500">
-            <HelpCircle className="h-10 w-10 mx-auto text-slate-600 mb-2" />
-            <p>No claims found matching filters.</p>
+          <div className="flex flex-col items-center justify-center p-12 text-center text-[#5E6B8A]">
+            <FileText className="h-10 w-10 text-[#8DB7F5] mb-2" />
+            <p className="font-semibold text-[#172A63] text-sm">No claims match the filter criteria</p>
+            <p className="text-xs text-[#5E6B8A] mt-1">Try resetting the search terms or status filters.</p>
           </div>
         ) : (
-          <div className="min-w-full divide-y divide-white/5">
-            <table className="min-w-full divide-y divide-white/5 text-left">
-              <thead className="bg-dark-800/40 text-xs font-semibold text-slate-400 uppercase tracking-wider sticky top-0 backdrop-blur-md">
-                <tr>
-                  <th className="px-6 py-3">Claim ID</th>
-                  <th className="px-6 py-3">Project ID / Name</th>
-                  <th className="px-6 py-3">Region</th>
-                  <th className="px-6 py-3 text-right">Tonnage</th>
-                  <th className="px-6 py-3 text-center">Version</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-right"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5 text-sm text-slate-300">
-                {filteredClaims.map((claim) => {
-                  const isSelected = selectedClaimId === claim.claimId;
-                  return (
-                    <tr 
-                      key={claim.claimId}
-                      onClick={() => onSelectClaim(claim.claimId)}
-                      className={`cursor-pointer transition-all duration-150 ${
-                        isSelected 
-                          ? 'bg-brand-500/10 border-l-2 border-brand-500' 
-                          : 'hover:bg-white/5'
-                      }`}
-                    >
-                      <td className="px-6 py-4 font-mono text-xs text-brand-500 font-semibold">
-                        {claim.claimId}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-100">{claim.projectName}</div>
-                        <div className="text-xs text-slate-400 font-mono mt-0.5">{claim.projectId}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-slate-200">{claim.region}</div>
-                        <div className="text-xs text-slate-400">{claim.projectType}</div>
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono font-semibold text-slate-100">
-                        {Number(claim.tonnage).toLocaleString()} t
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="bg-dark-700 text-slate-300 px-2 py-0.5 rounded text-xs font-mono">
-                          v{claim.version}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          {getStatusBadge(claim)}
-                          <MockWarningBadge anchored={claim.anchored} mode={claim.blockchainMode} />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${isSelected ? 'transform translate-x-1 text-brand-500' : ''}`} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <table className="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-[#EAF2FC] text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider font-sans">
+                <th className="py-3 px-3">Claim ID</th>
+                <th className="py-3 px-3">Project & Region</th>
+                <th className="py-3 px-3">Volume (tCO2e)</th>
+                <th className="py-3 px-3">Submitting Org</th>
+                <th className="py-3 px-3">Status</th>
+                <th className="py-3 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#EAF2FC]">
+              {filteredClaims.map((claim) => {
+                const isSelected = selectedClaimId === claim.claimId;
+                return (
+                  <tr
+                    key={claim.claimId}
+                    onClick={() => onSelectClaim(claim.claimId)}
+                    className={`cursor-pointer transition-all ${
+                      isSelected
+                        ? 'bg-[#FDF2F4] border-l-4 border-[#7A1028]'
+                        : 'hover:bg-[#FAF9F7]'
+                    }`}
+                  >
+                    {/* Claim ID */}
+                    <td className="py-3.5 px-3 font-mono font-semibold text-[#7A1028]">
+                      {claim.claimId}
+                      <span className="block text-[10px] text-[#5E6B8A] font-mono mt-0.5">
+                        v{claim.version} • {new Date(claim.timestamp).toLocaleDateString()}
+                      </span>
+                    </td>
+
+                    {/* Project & Region */}
+                    <td className="py-3.5 px-3">
+                      <div className="font-semibold text-[#172A63]">{claim.projectName}</div>
+                      <div className="text-[11px] text-[#5E6B8A]">{claim.projectId} • {claim.region}</div>
+                    </td>
+
+                    {/* Volume */}
+                    <td className="py-3.5 px-3 font-mono font-bold text-[#172A63]">
+                      {Number(claim.tonnage).toLocaleString()} t
+                    </td>
+
+                    {/* Submitting Org */}
+                    <td className="py-3.5 px-3 font-mono text-[11px] text-[#5E6B8A]">
+                      <span className="truncate block max-w-[140px]" title={claim.orgId}>
+                        {claim.orgId}
+                      </span>
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="py-3.5 px-3">
+                      <div className="flex flex-col gap-1 items-start">
+                        {getStatusBadge(claim)}
+                        <MockWarningBadge anchored={claim.anchored} mode={claim.blockchainMode} />
+                      </div>
+                    </td>
+
+                    {/* Inspect Link */}
+                    <td className="py-3.5 px-3 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectClaim(claim.claimId);
+                        }}
+                        className={`p-1.5 rounded-lg border transition-all ${
+                          isSelected
+                            ? 'bg-[#7A1028] text-white border-[#7A1028]'
+                            : 'bg-white hover:bg-[#FDF2F4] text-[#7A1028] border-[#E2E8F0]'
+                        }`}
+                        title="View Provenance Audit Trail"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

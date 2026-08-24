@@ -125,42 +125,42 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
   if (submitResult) {
     return (
-      <div className="glass rounded-xl border border-white/5 shadow-xl p-6 text-slate-300">
-        <div className="flex items-center gap-3 text-emerald-400 border-b border-white/5 pb-4 mb-4">
+      <div className="bg-white/95 rounded-2xl border border-[#E2E8F0] shadow-clean p-6 text-[#172A63]">
+        <div className="flex items-center gap-3 text-[#1677E8] border-b border-[#EAF2FC] pb-4 mb-4">
           <CheckCircle className="h-6 w-6" />
-          <h2 className="text-lg font-bold text-white">Claim Anchored Successfully</h2>
+          <h2 className="text-xl font-bold font-sans text-[#172A63]">Claim Anchored Successfully</h2>
         </div>
 
         <div className="space-y-4">
-          <div className="p-4 bg-emerald-500/5 border border-emerald-500/25 rounded-lg space-y-2">
+          <div className="p-4 bg-[#EAF2FC] border border-[#1677E8]/20 rounded-xl space-y-2">
             <div className="flex justify-between items-center flex-wrap gap-2">
-              <span className="text-xs text-slate-400 font-mono">Claim ID: <strong className="text-white">{submitResult.claimId}</strong></span>
+              <span className="text-xs text-[#5E6B8A] font-mono">Claim ID: <strong className="text-[#7A1028]">{submitResult.claimId}</strong></span>
               <MockWarningBadge anchored={submitResult.anchored} mode={submitResult.blockchainMode} />
             </div>
-            <p className="text-sm font-semibold text-white mt-1">{submitResult.projectName} ({submitResult.projectId})</p>
+            <p className="text-sm font-semibold text-[#172A63] mt-1">{submitResult.projectName} ({submitResult.projectId})</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4 text-xs font-mono">
             <div>
-              <span className="text-slate-500 block">Submitting Org:</span>
-              <span className="text-slate-300 select-all block mt-0.5">{submitResult.orgId}</span>
+              <span className="text-[#5E6B8A] block">Submitting Org:</span>
+              <span className="text-[#172A63] select-all block mt-0.5 font-bold">{submitResult.orgId}</span>
             </div>
             <div>
-              <span className="text-slate-500 block">Tonnage Volume:</span>
-              <span className="text-white block font-bold mt-0.5">{Number(submitResult.tonnage).toLocaleString()} tCO2e</span>
+              <span className="text-[#5E6B8A] block">Tonnage Volume:</span>
+              <span className="text-[#172A63] block font-bold mt-0.5">{Number(submitResult.tonnage).toLocaleString()} tCO2e</span>
             </div>
           </div>
 
-          <div className="text-xs font-mono border-t border-white/5 pt-4 space-y-2">
+          <div className="text-xs font-mono border-t border-[#EAF2FC] pt-4 space-y-2">
             <div>
-              <span className="text-slate-500">Data Hash (SHA-256):</span>
-              <span className="text-slate-300 block select-all bg-dark-900/50 p-2 rounded border border-white/5 mt-1 truncate">
+              <span className="text-[#5E6B8A]">Data Hash (SHA-256):</span>
+              <span className="text-[#172A63] block select-all bg-[#FAF9F7] p-2 rounded-lg border border-[#E2E8F0] mt-1 truncate">
                 {submitResult.hash}
               </span>
             </div>
             <div>
-              <span className="text-slate-500">Transaction Hash (EVM):</span>
-              <span className="text-slate-300 block select-all bg-dark-900/50 p-2 rounded border border-white/5 mt-1 truncate">
+              <span className="text-[#5E6B8A]">Transaction Hash (EVM):</span>
+              <span className="text-[#172A63] block select-all bg-[#FAF9F7] p-2 rounded-lg border border-[#E2E8F0] mt-1 truncate">
                 {submitResult.txHash}
               </span>
             </div>
@@ -168,7 +168,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
           <button
             onClick={() => onSuccessSubmit(submitResult.claimId)}
-            className="w-full flex items-center justify-center gap-2 mt-4 bg-brand-500 hover:bg-brand-600 text-white rounded-lg py-2.5 font-bold transition-all"
+            className="w-full flex items-center justify-center gap-2 mt-4 btn-maroon text-xs font-semibold py-3"
           >
             Inspect in Claims Directory
             <ArrowRight className="h-4 w-4" />
@@ -179,15 +179,15 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   }
 
   return (
-    <div className="glass rounded-xl border border-white/5 shadow-xl p-6 flex flex-col h-full justify-between">
+    <div className="bg-white/95 rounded-2xl border border-[#E2E8F0] shadow-clean p-6 flex flex-col h-full justify-between">
       <div>
-        <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-white/5 pb-4 mb-4">
-          <FilePlus className="h-5 w-5 text-brand-500" />
+        <h2 className="text-xl font-bold font-sans text-[#172A63] flex items-center gap-2 border-b border-[#EAF2FC] pb-4 mb-4">
+          <FilePlus className="h-5 w-5 text-[#7A1028]" />
           Register Environmental Claim
         </h2>
 
         {error && (
-          <div className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 font-sans">
             <ShieldAlert className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -196,7 +196,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Submission Type Option */}
           <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
               Submission Type
             </label>
             <select
@@ -205,7 +205,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 setSubmissionType(e.target.value);
                 setTargetProjectId('');
               }}
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+              className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans cursor-pointer"
             >
               <option value="initial">Initial Registry Entry (New Project)</option>
               <option value="__dispute__">Independent Claim on Existing Project (Dispute Test)</option>
@@ -215,13 +215,13 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           {/* Target Project Select (Visible only for dispute testing) */}
           {submissionType === '__dispute__' && (
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
                 Target Project to Dispute
               </label>
               <select
                 value={targetProjectId}
                 onChange={(e) => setTargetProjectId(e.target.value)}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+                className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans cursor-pointer"
                 required
               >
                 <option value="">-- Choose Existing Project --</option>
@@ -237,7 +237,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           {/* Project Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
                 Project Name
               </label>
               <input
@@ -245,13 +245,13 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 disabled={submissionType === '__dispute__'}
-                placeholder="e.g. Amazon Rainforest Conservation"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                placeholder="e.g. Amazon Conservation"
+                className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] placeholder:text-[#5E6B8A]/50 focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans disabled:opacity-60"
                 required
               />
             </div>
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
                 Region / Country
               </label>
               <input
@@ -260,7 +260,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 onChange={(e) => setRegion(e.target.value)}
                 disabled={submissionType === '__dispute__'}
                 placeholder="e.g. Brazil"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] placeholder:text-[#5E6B8A]/50 focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans disabled:opacity-60"
                 required
               />
             </div>
@@ -268,7 +268,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
                 Tonnage (tCO2e Volume)
               </label>
               <input
@@ -276,19 +276,19 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 value={tonnage}
                 onChange={(e) => setTonnage(e.target.value)}
                 placeholder="e.g. 150000"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] placeholder:text-[#5E6B8A]/50 focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans"
                 required
               />
             </div>
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
                 Methodology / Sector
               </label>
               <select
                 value={methodology}
                 onChange={(e) => setMethodology(e.target.value)}
                 disabled={submissionType === '__dispute__'}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans cursor-pointer disabled:opacity-60"
               >
                 {methodologies.map(m => (
                   <option key={m} value={m}>{m}</option>
@@ -299,13 +299,13 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
           {/* Org keys mapping selector */}
           <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-[10px] font-bold text-[#5E6B8A] uppercase tracking-wider mb-1 font-sans">
               Submit As (Authorized Organization)
             </label>
             <select
               value={demoOrgId}
               onChange={(e) => setDemoOrgId(e.target.value)}
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+              className="w-full bg-[#FAF9F7] border border-[#E2E8F0] text-[#172A63] focus:outline-none focus:border-[#7A1028] focus:ring-1 focus:ring-[#7A1028] rounded-xl px-3.5 py-2 text-xs font-sans cursor-pointer"
             >
               {orgs.map(org => (
                 <option key={org.id} value={org.id}>
@@ -315,21 +315,21 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
             </select>
           </div>
 
-          <div className="p-3 bg-white/5 border border-white/10 rounded-lg flex items-start gap-2 text-3xs text-slate-400 font-mono">
-            <Info className="h-4.5 w-4.5 text-brand-500 shrink-0 mt-0.5" />
+          <div className="p-3 bg-[#EAF2FC]/60 border border-[#1677E8]/20 rounded-xl flex items-start gap-2 text-xs text-[#172A63] font-sans">
+            <Info className="h-4 w-4 text-[#1677E8] shrink-0 mt-0.5" />
             <p>
-              Under the hood, GreenProof will deterministically sort the parameters, hash the canonical representation with SHA-256, sign it locally using ECDSA keys, and anchor it on the Ethereum smart contract.
+              GreenProof canonicalizes and hashes parameters with SHA-256, signs them locally using ECDSA keys, and anchors proof records on the blockchain smart contract.
             </p>
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white rounded-lg py-2.5 font-bold transition-all text-xs flex items-center justify-center gap-1.5"
+            className="w-full btn-maroon text-xs font-semibold py-3 flex items-center justify-center gap-1.5"
           >
             {submitting ? (
               <>
-                <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Signing & Anchoring...
               </>
             ) : (

@@ -9,7 +9,6 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
   const [signerVerification, setSignerVerification] = useState({});
 
   const handleVerifySigner = async (targetClaimId) => {
-    // Set loading state
     setSignerVerification(prev => ({
       ...prev,
       [targetClaimId]: { loading: true }
@@ -47,285 +46,210 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
     }
   };
 
-  // Re-build timeline chain whenever claimId or claims list changes
   useEffect(() => {
     if (!claimId) return;
     setLoading(true);
     setAuditReport(null);
 
-    // Fetch full audit path via backend verification endpoint
     fetch(`${API_URL}/claims/${claimId}/verify`)
       .then(res => res.json())
       .then(data => {
         setAuditReport(data);
         if (data.chain) {
-          // Verify endpoint returns chain oldest first
           setTimeline(data.chain);
         } else {
-          // Local fallback build if api verify fails
           buildLocalTimeline();
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Timeline verification fetch failed:", err);
+        console.error("Failed to fetch verify path, building local fallback:", err);
         buildLocalTimeline();
         setLoading(false);
       });
+  }, [claimId, claims]);
 
-    function buildLocalTimeline() {
-      const chain = [];
-      let current = claims.find(c => c.claimId === claimId);
-      
-      while (current) {
-        chain.push({
-          claimId: current.claimId,
-          version: current.version,
-          dbHash: current.hash,
-          recomputedHash: current.hash,
-          anchoredHash: current.hash,
-          signatureVerified: true,
-          anchorVerified: true,
-          tonnage: current.tonnage,
-          notes: current.notes,
-          timestamp: current.timestamp,
-          orgId: current.orgId,
-          txHash: current.txHash,
-          status: current.status
-        });
-        
-        if (current.parentHash) {
-          current = claims.find(c => c.hash === current.parentHash);
-        } else {
-          current = null;
-        }
-      }
-      // Reverse to show oldest first
-      setTimeline(chain.reverse());
+  const buildLocalTimeline = () => {
+    const chain = [];
+    let curr = claims.find(c => c.claimId === claimId);
+    while (curr) {
+      chain.unshift(curr);
+      if (!curr.parentClaimId) break;
+      curr = claims.find(c => c.claimId === curr.parentClaimId);
     }
-  }, [claimId, claims, API_URL]);
+    setTimeline(chain);
+  };
 
   if (!claimId) {
     return (
-      <div className="glass rounded-xl p-8 border border-white/5 text-center text-slate-500 h-full flex flex-col justify-center items-center">
-        <GitBranch className="h-12 w-12 text-slate-700 mb-2" />
-        <p className="font-semibold text-slate-400">No Claim Selected</p>
-        <p className="text-xs text-slate-500 mt-1">Select a claim from the directory to inspect its history chain.</p>
+      <div className="bg-white/95 rounded-2xl border border-[#E2E8F0] shadow-clean p-8 text-center text-[#5E6B8A] h-full flex flex-col justify-center items-center">
+        <GitBranch className="h-10 w-10 text-[#8DB7F5] mb-2" />
+        <p className="font-semibold text-[#172A63]">No Claim Selected</p>
+        <p className="text-xs text-[#5E6B8A] mt-1">Select a claim from the directory to inspect its cryptographic provenance.</p>
       </div>
     );
   }
 
-  const selectedClaim = claims.find(c => c.claimId === claimId);
-  if (!selectedClaim) return null;
-
   return (
-    <div className="glass rounded-xl border border-white/5 shadow-xl p-6 h-full flex flex-col">
-      <div className="border-b border-white/5 pb-4 mb-6">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <GitBranch className="h-5 w-5 text-emerald-500" />
-          Data Provenance Ancestry Chain
+    <div className="bg-white/95 rounded-2xl border border-[#E2E8F0] shadow-clean p-6 h-full flex flex-col">
+      {/* Header */}
+      <div className="border-b border-[#EAF2FC] pb-4 mb-5">
+        <h2 className="text-lg font-bold font-sans text-[#172A63] flex items-center gap-2">
+          <GitBranch className="h-5 w-5 text-[#1677E8]" />
+          Provenance Ancestry Chain
         </h2>
+        <p className="text-xs text-[#5E6B8A] mt-0.5 font-sans">
+          Historical revision graph with cryptographic signer verification.
+        </p>
+
+        {/* Global Audit Status Banner */}
         {auditReport && (
-          <div className="mt-2.5">
-            <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} liveVerification={auditReport.liveVerification} />
+          <div className={`mt-3.5 p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+            auditReport.isValid 
+              ? 'bg-[#EAF2FC] border-[#1677E8]/25 text-[#172A63]' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className={`h-4 w-4 ${auditReport.isValid ? 'text-[#1677E8]' : 'text-red-600'}`} />
+              <span className="font-semibold font-sans">
+                {auditReport.isValid ? "Cryptographic Chain Verified" : "Chain Integrity Tampered"}
+              </span>
+            </div>
+            <span className="font-mono text-[11px] font-bold text-[#1677E8]">
+              {timeline.length} {timeline.length === 1 ? 'Node' : 'Nodes'}
+            </span>
           </div>
         )}
-        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-          <div>
-            <span className="text-xs text-slate-400">Project:</span>
-            <span className="text-xs font-semibold text-slate-200 ml-1.5">{selectedClaim.projectName}</span>
-            <span className="text-xs text-slate-500 font-mono ml-2">({selectedClaim.projectId})</span>
-          </div>
-
-          {auditReport && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">Integrity:</span>
-              {auditReport.isValid ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                  <CheckCircle2 className="h-3 w-3" /> Cryptographic Pass
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse">
-                  <ShieldAlert className="h-3 w-3" /> Integrity Fail
-                </span>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
-      {loading ? (
-        <div className="flex-1 flex justify-center items-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-emerald-500 border-r-2 border-transparent"></div>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto pr-2">
-          <div className="relative border-l-2 border-slate-800 ml-3 pl-6 space-y-6 pb-2">
-            {timeline.map((version, index) => {
-              const dateStr = version.timestamp 
-                ? new Date(version.timestamp).toLocaleString() 
-                : new Date(selectedClaim.timestamp).toLocaleString();
-              const fullRecord = claims.find(c => c.claimId === version.claimId) || selectedClaim;
-              
-              const isRoot = index === 0;
-              const isLatest = index === timeline.length - 1;
+      {/* Timeline nodes */}
+      <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+        {loading ? (
+          <div className="p-8 text-center text-[#5E6B8A]">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto text-[#1677E8] mb-2" />
+            <span className="text-xs font-mono">Tracing blockchain signatures...</span>
+          </div>
+        ) : timeline.length === 0 ? (
+          <div className="p-4 text-xs text-[#5E6B8A] font-mono">No ancestry records found.</div>
+        ) : (
+          timeline.map((node, index) => {
+            const isTarget = node.claimId === claimId;
+            const isRoot = index === 0;
+            const signerInfo = signerVerification[node.claimId];
 
-              return (
-                <div key={version.claimId} className="relative">
-                  {/* Timeline Dot */}
-                  <span className={`absolute -left-[31px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-dark-900 ${
-                    isLatest 
-                      ? 'bg-emerald-500 ring-emerald-500/20' 
-                      : 'bg-slate-700 ring-slate-800'
-                  }`}>
-                    {isLatest && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>}
-                  </span>
+            return (
+              <div key={node.claimId} className="relative pl-6">
+                {/* Vertical connecting line */}
+                {index !== timeline.length - 1 && (
+                  <div className="absolute left-[9px] top-6 bottom-[-24px] w-[2px] bg-[#E2E8F0]" />
+                )}
 
-                  <div className={`p-4 rounded-xl border transition-all ${
-                    isLatest 
-                      ? 'bg-dark-800/60 border-brand-500/25' 
-                      : 'bg-dark-800/20 border-white/5 text-slate-400'
-                  }`}>
-                    {/* Header */}
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
-                            isLatest ? 'bg-brand-500/10 text-brand-400' : 'bg-slate-800 text-slate-400'
-                          }`}>
-                            Version {version.version}
-                          </span>
-                          <span className="font-mono text-2xs text-slate-500">{version.claimId}</span>
-                          <MockWarningBadge anchored={fullRecord.anchored} mode={fullRecord.blockchainMode} liveVerification={version.liveVerification} />
-                        </div>
-                        {version.notes && (
-                          <p className="text-xs text-slate-300 font-medium italic mt-2">
-                            "{version.notes}"
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-sm font-bold text-white">
-                          {Number(version.tonnage).toLocaleString()} t
-                        </div>
-                        <div className="text-3xs text-slate-500 flex items-center gap-1 mt-1">
-                          <Clock className="h-3 w-3" /> {dateStr}
-                        </div>
-                      </div>
-                    </div>
+                {/* Node dot icon */}
+                <div className={`absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center ${
+                  isTarget 
+                    ? 'border-[#7A1028] bg-[#FDF2F4] text-[#7A1028]' 
+                    : 'border-[#1677E8] bg-[#EAF2FC] text-[#1677E8]'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${isTarget ? 'bg-[#7A1028]' : 'bg-[#1677E8]'}`} />
+                </div>
 
-                    {/* Cryptographic Hashes */}
-                    <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-3xs font-mono text-slate-400">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Submitting Org:</span>
-                        <span className="text-slate-300 flex items-center gap-1 select-all" title={fullRecord.orgId}>
-                          <Key className="h-2.5 w-2.5" />
-                          {fullRecord.orgName || `${fullRecord.orgId.substring(0, 10)}...`}
+                {/* Node Card Content */}
+                <div className={`p-4 rounded-xl border transition-all ${
+                  isTarget 
+                    ? 'bg-[#FDF2F4]/60 border-[#7A1028]/25 shadow-sm' 
+                    : 'bg-white border-[#E2E8F0]'
+                }`}>
+                  {/* Card Title & Version */}
+                  <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#7A1028]">{node.claimId}</span>
+                      <span className="bg-[#FAF9F7] border border-[#E2E8F0] px-2 py-0.5 rounded text-[10px] text-[#172A63] font-mono font-bold">
+                        v{node.version}
+                      </span>
+                      {isRoot && (
+                        <span className="bg-[#EAF2FC] text-[#1677E8] text-[9px] font-bold px-1.5 py-0.5 rounded font-mono uppercase">
+                          Root
                         </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Payload Hash:</span>
-                        <span className={`flex items-center gap-1 select-all ${
-                          version.recomputedHash === version.dbHash ? 'text-slate-300' : 'text-red-400 font-bold'
-                        }`}>
-                          {version.dbHash ? `${version.dbHash.substring(0, 12)}...` : 'None'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between font-mono">
-                        <span className="text-slate-500">
-                          {version.blockchainMode === 'on-chain' ? 'On-Chain Anchor:' : 'Simulated Anchor:'}
-                        </span>
-                        <span className={`flex items-center gap-1 select-all ${
-                          version.anchorVerified || version.liveVerification === 'unavailable' ? 'text-emerald-400' : 'text-red-400 font-bold animate-pulse'
-                        }`}>
-                          {version.anchoredHash 
-                            ? `${version.anchoredHash.substring(0, 12)}... ${
-                                version.blockchainMode === 'on-chain' 
-                                  ? (version.liveVerification === 'unavailable' ? '[Offline (Cached)]' : '[Verified]') 
-                                  : '[Matches (Mock)]'
-                              }`
-                            : 'Unanchored/Mismatch'
-                          }
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Anchor Tx:</span>
-                        <span className="text-slate-400 flex items-center gap-1 text-2xs truncate max-w-[200px] select-all">
-                          {fullRecord.txHash ? `${fullRecord.txHash.substring(0, 10)}...` : 'None'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Live Signer Re-recovery Panel */}
-                    <div className="mt-3 pt-2.5 border-t border-dashed border-white/5 flex flex-col gap-1.5 text-3xs font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Dynamic Signer Check:</span>
-                        {signerVerification[version.claimId] ? (
-                          <button
-                            onClick={() => handleVerifySigner(version.claimId)}
-                            className="text-[9px] px-1.5 py-0.5 rounded border border-white/10 hover:border-white/20 text-slate-400 font-mono transition-all"
-                          >
-                            Re-Verify
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleVerifySigner(version.claimId)}
-                            className="text-[9px] px-2 py-0.5 rounded border border-brand-500/20 bg-brand-500/5 hover:bg-brand-500/15 text-brand-400 font-mono font-semibold transition-all flex items-center gap-1"
-                          >
-                            Verify Signer
-                          </button>
-                        )}
-                      </div>
-
-                      {signerVerification[version.claimId] && (
-                        <div className="bg-dark-900/40 p-2 rounded-lg border border-white/5 space-y-1.5 mt-1 text-[10px] text-slate-400">
-                          {signerVerification[version.claimId].loading ? (
-                            <div className="flex items-center gap-1 text-slate-500 py-1">
-                              <Loader2 className="h-3 w-3 animate-spin text-brand-500" />
-                              Recovering address via ecrecover...
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <div className="truncate flex justify-between gap-2">
-                                <span className="text-slate-500">Signature:</span>
-                                <span className="text-slate-300 max-w-[150px] truncate select-all">{signerVerification[version.claimId].rawSignature}</span>
-                              </div>
-                              <div className="truncate flex justify-between gap-2">
-                                <span className="text-slate-500">Data Hash:</span>
-                                <span className="text-slate-300 max-w-[150px] truncate select-all">{signerVerification[version.claimId].dataHash}</span>
-                              </div>
-                              <div className="flex justify-between gap-2">
-                                <span className="text-slate-500">Recovered:</span>
-                                <span className="text-white font-bold select-all">{signerVerification[version.claimId].recoveredOrgAddress.substring(0, 14)}...</span>
-                              </div>
-                              <div className="flex justify-between gap-2">
-                                <span className="text-slate-500">Stored:</span>
-                                <span className="text-white font-bold select-all">{signerVerification[version.claimId].storedOrgAddress.substring(0, 14)}...</span>
-                              </div>
-                              <div className="pt-1.5 border-t border-white/5 flex justify-between items-center">
-                                <span className="text-slate-500">Live ecrecover Check:</span>
-                                {signerVerification[version.claimId].signatureValid ? (
-                                  <span className="px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 font-bold uppercase text-[8px] tracking-wider">
-                                    ✓ Signature Match
-                                  </span>
-                                ) : (
-                                  <span className="px-1 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/25 font-bold uppercase text-[8px] tracking-wider animate-pulse">
-                                    ✗ Mismatch
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
                       )}
                     </div>
+                    <MockWarningBadge anchored={node.anchored} mode={node.blockchainMode} />
                   </div>
+
+                  {/* Node Metadata Grid */}
+                  <div className="space-y-1.5 text-xs text-[#5E6B8A]">
+                    <div className="flex justify-between">
+                      <span>Reported Volume:</span>
+                      <span className="font-mono font-bold text-[#172A63]">{Number(node.tonnage).toLocaleString()} tCO2e</span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Publisher:</span>
+                      <span className="font-mono text-[11px] text-[#172A63] truncate max-w-[150px]" title={node.orgId}>
+                        {node.orgId}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between">
+                      <span>Anchored At:</span>
+                      <span className="font-mono text-[11px] text-[#5E6B8A]">
+                        {new Date(node.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#EAF2FC]">
+                      <span className="text-[10px] uppercase font-bold text-[#5E6B8A] block mb-0.5">Payload Hash (SHA-256)</span>
+                      <span className="font-mono text-[10px] text-[#172A63] select-all bg-[#FAF9F7] p-1.5 rounded border border-[#E2E8F0] block truncate">
+                        {node.hash}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Signer Verify Accordion Action */}
+                  <div className="mt-3 pt-2 border-t border-[#EAF2FC] flex items-center justify-between">
+                    <button
+                      onClick={() => handleVerifySigner(node.claimId)}
+                      disabled={signerInfo?.loading}
+                      className="text-xs font-semibold font-sans text-[#1677E8] hover:text-[#125EC0] flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      <FileSignature className="h-3.5 w-3.5" />
+                      {signerInfo ? "Re-verify ECDSA Signer" : "Verify Cryptographic Signer"}
+                    </button>
+                  </div>
+
+                  {/* Signer Verification Details Box */}
+                  {signerInfo && (
+                    <div className="mt-3 p-3 bg-[#FAF9F7] border border-[#E2E8F0] rounded-lg text-xs font-mono space-y-1.5">
+                      {signerInfo.loading ? (
+                        <div className="flex items-center gap-2 text-[#5E6B8A]">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#1677E8]" />
+                          <span>Recovering address from signature bytes...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-[#5E6B8A] uppercase">Recovered Signer:</span>
+                            <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+                              signerInfo.signatureValid ? 'bg-[#EAF2FC] text-[#1677E8]' : 'bg-red-50 text-red-700'
+                            }`}>
+                              {signerInfo.signatureValid ? "VALID" : "INVALID / FORGED"}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-[#172A63] select-all break-all bg-white p-1 rounded border border-[#E2E8F0]">
+                            {signerInfo.recoveredOrgAddress}
+                          </div>
+                          <div className="text-[10px] text-[#5E6B8A]">
+                            Stored Signer: <span className="text-[#172A63]">{signerInfo.storedOrgAddress.substring(0, 16)}...</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

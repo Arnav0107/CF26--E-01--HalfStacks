@@ -1,106 +1,106 @@
 {
   "cleanClaims": [
-    "seed-claim-002",
     "seed-claim-003",
     "seed-claim-012",
     "seed-claim-013",
-    "seed-claim-015",
+    "seed-claim-014",
     "seed-claim-016",
+    "seed-claim-018",
     "seed-claim-019",
     "seed-claim-020",
-    "seed-claim-021",
+    "seed-claim-022",
     "seed-claim-023"
   ],
   "correctionChains": [
     {
-      "originalClaimId": "seed-claim-025",
+      "originalClaimId": "seed-claim-002",
       "correctedClaimId": "seed-correct-001",
       "versions": [
-        "seed-claim-025",
+        "seed-claim-002",
         "seed-correct-001"
       ],
       "notes": "Sensor recalibration for July auditing cycle",
-      "deltaPercent": "-6.63%"
+      "deltaPercent": "7.82%"
     },
     {
-      "originalClaimId": "seed-claim-018",
+      "originalClaimId": "seed-claim-007",
       "correctedClaimId": "seed-correct-002",
       "versions": [
-        "seed-claim-018",
+        "seed-claim-007",
         "seed-correct-002"
       ],
       "notes": "Audited satellite imagery baseline adjustment",
-      "deltaPercent": "-7.77%"
+      "deltaPercent": "4.21%"
     },
     {
-      "originalClaimId": "seed-claim-024",
+      "originalClaimId": "seed-claim-035",
       "correctedClaimId": "seed-correct-003",
       "versions": [
-        "seed-claim-024",
+        "seed-claim-035",
         "seed-correct-003"
       ],
-      "notes": "Revised leakage calculation factors",
-      "deltaPercent": "4.2%"
-    },
-    {
-      "originalClaimId": "seed-claim-027",
-      "correctedClaimId": "seed-correct-004",
-      "versions": [
-        "seed-claim-027",
-        "seed-correct-004"
-      ],
-      "notes": "Revised leakage calculation factors",
-      "deltaPercent": "5.43%"
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "-5.2%"
     },
     {
       "originalClaimId": "seed-claim-017",
-      "correctedClaimId": "seed-correct-005",
+      "correctedClaimId": "seed-correct-004",
       "versions": [
         "seed-claim-017",
+        "seed-correct-004"
+      ],
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "-4.15%"
+    },
+    {
+      "originalClaimId": "seed-claim-025",
+      "correctedClaimId": "seed-correct-005",
+      "versions": [
+        "seed-claim-025",
         "seed-correct-005"
       ],
-      "notes": "Methodology coefficient update for forest-canopy density",
-      "deltaPercent": "-6.07%"
+      "notes": "Audited satellite imagery baseline adjustment",
+      "deltaPercent": "-3.49%"
     },
     {
-      "originalClaimId": "seed-claim-022",
+      "originalClaimId": "seed-claim-001",
       "correctedClaimId": "seed-correct-006",
       "versions": [
-        "seed-claim-022",
+        "seed-claim-001",
         "seed-correct-006"
       ],
-      "notes": "Ground-truth biomass survey calibration",
-      "deltaPercent": "-4.32%"
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "-5.68%"
     },
     {
-      "originalClaimId": "seed-claim-029",
+      "originalClaimId": "seed-claim-010",
       "correctedClaimId": "seed-correct-007",
       "versions": [
-        "seed-claim-029",
+        "seed-claim-010",
         "seed-correct-007"
       ],
-      "notes": "Ground-truth biomass survey calibration",
-      "deltaPercent": "5.92%"
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "6.14%"
     }
   ],
   "disputedClaims": [
     {
-      "projectId": "OWID-AFG-2022",
-      "projectName": "Afghanistan National GHG Reduction Goal (2022)",
-      "originalClaimId": "seed-claim-001",
+      "projectId": "OWID-ARG-2022",
+      "projectName": "Argentina National GHG Reduction Goal (2022)",
+      "originalClaimId": "seed-claim-021",
       "disputedClaimId": "seed-dispute-001",
-      "originalTonnage": 1017000,
-      "disputedTonnage": 798858,
-      "deltaPercent": "-21.45%"
+      "originalTonnage": 18376800,
+      "disputedTonnage": 15504567,
+      "deltaPercent": "-15.63%"
     },
     {
-      "projectId": "OWID-ALG-2023",
-      "projectName": "Algeria National GHG Reduction Goal (2023)",
-      "originalClaimId": "seed-claim-014",
+      "projectId": "OWID-ALG-2024",
+      "projectName": "Algeria National GHG Reduction Goal (2024)",
+      "originalClaimId": "seed-claim-015",
       "disputedClaimId": "seed-dispute-002",
-      "originalTonnage": 20284700,
-      "disputedTonnage": 24794032,
-      "deltaPercent": "22.23%"
+      "originalTonnage": 19820300,
+      "disputedTonnage": 16454789,
+      "deltaPercent": "-16.98%"
     }
   ]
 }

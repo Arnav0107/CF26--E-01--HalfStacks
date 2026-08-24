@@ -292,7 +292,9 @@ router.get('/claims/:id/verify', async (req, res) => {
       anchoredHash,
       signatureVerified: sigVerified,
       anchorVerified,
-      tonnage: claim.tonnage
+      tonnage: claim.tonnage,
+      anchored: anchorDetails ? anchorDetails.anchored : false,
+      blockchainMode: anchorDetails ? anchorDetails.mode : "mock"
     });
 
     // 3. Walk parent chain
@@ -317,8 +319,9 @@ router.get('/claims/:id/verify', async (req, res) => {
 
       let pAnchoredHash = null;
       let pAnchorVerified = false;
+      let pAnchor = null;
       try {
-        const pAnchor = await blockchain.getAnchor(parent.claimId);
+        pAnchor = await blockchain.getAnchor(parent.claimId);
         pAnchoredHash = pAnchor.dataHash;
         pAnchorVerified = (pAnchoredHash.toLowerCase() === pRecomputedHash.toLowerCase()) && 
                           (pAnchor.orgAddress.toLowerCase() === parent.orgId.toLowerCase());
@@ -334,7 +337,9 @@ router.get('/claims/:id/verify', async (req, res) => {
         anchoredHash: pAnchoredHash,
         signatureVerified: pSigVerified,
         anchorVerified: pAnchorVerified,
-        tonnage: parent.tonnage
+        tonnage: parent.tonnage,
+        anchored: pAnchor ? pAnchor.anchored : false,
+        blockchainMode: pAnchor ? pAnchor.mode : "mock"
       });
 
       if (!pDbHashMatches || !pSigVerified || !pAnchorVerified) {
@@ -451,6 +456,22 @@ router.post('/clear', async (req, res) => {
   try {
     await db.clearAll();
     res.json({ message: "Database cleared successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /status
+ * Returns blockchain connection status and server info.
+ */
+router.get('/status', async (req, res) => {
+  try {
+    const isMock = blockchain.isMock();
+    res.json({
+      status: "online",
+      blockchainConnected: !isMock
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

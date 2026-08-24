@@ -85,7 +85,12 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
           <GitBranch className="h-5 w-5 text-emerald-500" />
           Data Provenance Ancestry Chain
         </h2>
-        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+        {auditReport && (
+          <div className="mt-2.5">
+            <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} />
+          </div>
+        )}
+        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
           <div>
             <span className="text-xs text-slate-400">Project:</span>
             <span className="text-xs font-semibold text-slate-200 ml-1.5">{selectedClaim.projectName}</span>
@@ -93,20 +98,17 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
           </div>
 
           {auditReport && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-400">Audit Status:</span>
-                {auditReport.isValid ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                    <CheckCircle2 className="h-3 w-3" /> Integrity Pass
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse">
-                    <ShieldAlert className="h-3 w-3" /> Verification Fail
-                  </span>
-                )}
-              </div>
-              <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} />
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400">Integrity:</span>
+              {auditReport.isValid ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                  <CheckCircle2 className="h-3 w-3" /> Cryptographic Pass
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse">
+                  <ShieldAlert className="h-3 w-3" /> Integrity Fail
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -190,12 +192,14 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                         </span>
                       </div>
                       <div className="flex justify-between font-mono">
-                        <span className="text-slate-500">On-Chain Anchor:</span>
+                        <span className="text-slate-500">
+                          {version.blockchainMode === 'on-chain' ? 'On-Chain Anchor:' : 'Simulated Anchor:'}
+                        </span>
                         <span className={`flex items-center gap-1 select-all ${
                           version.anchorVerified ? 'text-emerald-400' : 'text-red-400 font-bold animate-pulse'
                         }`}>
                           {version.anchoredHash 
-                            ? `${version.anchoredHash.substring(0, 12)}... [Verified]`
+                            ? `${version.anchoredHash.substring(0, 12)}... ${version.blockchainMode === 'on-chain' ? '[Verified]' : '[Matches (Mock)]'}`
                             : 'Unanchored/Mismatch'
                           }
                         </span>

@@ -15,15 +15,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('directory');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [blockchainConnected, setBlockchainConnected] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch claims and disputes in parallel
-      const [claimsRes, disputesRes] = await Promise.all([
+      // Fetch claims, disputes, and status in parallel
+      const [claimsRes, disputesRes, statusRes] = await Promise.all([
         fetch(`${API_URL}/claims`),
-        fetch(`${API_URL}/disputes`)
+        fetch(`${API_URL}/disputes`),
+        fetch(`${API_URL}/status`).catch(() => null)
       ]);
 
       if (!claimsRes.ok || !disputesRes.ok) {
@@ -32,6 +34,13 @@ export default function App() {
 
       const claimsData = await claimsRes.json();
       const disputesData = await disputesRes.json();
+      
+      let isConnected = false;
+      if (statusRes && statusRes.ok) {
+        const statusData = await statusRes.json();
+        isConnected = !!statusData.blockchainConnected;
+      }
+      setBlockchainConnected(isConnected);
 
       setClaims(claimsData);
       setDisputes(disputesData);
@@ -78,8 +87,10 @@ export default function App() {
         {/* Network status and refresh */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-xs">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-slate-300 font-medium font-mono">Local Node: Connected</span>
+            <span className={`h-2.5 w-2.5 rounded-full ${blockchainConnected ? 'bg-emerald-500 animate-ping' : 'bg-amber-500 animate-pulse'}`}></span>
+            <span className="text-slate-300 font-medium font-mono">
+              Local Node: {blockchainConnected ? 'Connected' : 'Disconnected (Mock Mode)'}
+            </span>
           </div>
 
           <button

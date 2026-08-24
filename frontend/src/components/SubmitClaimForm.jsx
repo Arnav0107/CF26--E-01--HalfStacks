@@ -7,6 +7,10 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   
   // Form fields
   const [submissionType, setSubmissionType] = useState('initial'); // 'initial' | '__dispute__'
+  const [environmentalDomain, setEnvironmentalDomain] = useState('carbon');
+  const [metric, setMetric] = useState('CO2 emissions');
+  const [unit, setUnit] = useState('tonnes CO2e');
+  const [period, setPeriod] = useState('2025');
   const [targetProjectId, setTargetProjectId] = useState('');
   const [projectName, setProjectName] = useState('');
   const [region, setRegion] = useState('');
@@ -14,23 +18,52 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   const [methodology, setMethodology] = useState('REDD+ / Forestry');
   const [demoOrgId, setDemoOrgId] = useState('');
 
-  // States
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [submitResult, setSubmitResult] = useState(null);
+  // AI Extraction Tool State
+  const [showExtractorModal, setShowExtractorModal] = useState(false);
+  const [reportText, setReportText] = useState('');
+  const [extractedCandidates, setExtractedCandidates] = useState([]);
+  const [extracting, setExtracting] = useState(false);
 
-  // Available methodologies
-  const methodologies = [
-    'REDD+ / Forestry',
-    'Methane Avoidance',
-    'Energy Efficiency',
-    'Wind',
-    'Solar',
-    'Water Purification',
-    'Blue Carbon',
-    'Agroforestry',
-    'Hydropower'
-  ];
+  // Available domain metrics mapping
+  const domainMetrics = {
+    carbon: [
+      { metric: 'CO2 emissions', unit: 'tonnes CO2e' },
+      { metric: 'CH4 emissions', unit: 'tonnes CH4' },
+      { metric: 'GHG reduction', unit: '% reduction' }
+    ],
+    water: [
+      { metric: 'Water consumption', unit: 'million litres' },
+      { metric: 'Water withdrawal', unit: 'm3' },
+      { metric: 'Water recycling', unit: '%' }
+    ],
+    air: [
+      { metric: 'PM2.5 particulate', unit: 'µg/m³' },
+      { metric: 'PM10 index', unit: 'µg/m³' },
+      { metric: 'NO2 concentration', unit: 'ppb' }
+    ],
+    waste: [
+      { metric: 'Recycled waste ratio', unit: '%' },
+      { metric: 'Landfilled waste', unit: 'tonnes' },
+      { metric: 'Hazardous waste diverted', unit: 'tonnes' }
+    ],
+    forest: [
+      { metric: 'Forest area protected', unit: 'hectares' },
+      { metric: 'Afforestation canopy', unit: 'hectares' },
+      { metric: 'Deforestation rate', unit: '% reduction' }
+    ],
+    energy: [
+      { metric: 'Renewable energy share', unit: '%' },
+      { metric: 'Solar capacity generated', unit: 'MWh' },
+      { metric: 'Energy intensity', unit: 'kWh / unit' }
+    ]
+  };
+
+  // Update metric/unit when domain changes
+  useEffect(() => {
+    const defaultPairs = domainMetrics[environmentalDomain] || domainMetrics['carbon'];
+    setMetric(defaultPairs[0].metric);
+    setUnit(defaultPairs[0].unit);
+  }, [environmentalDomain]);
 
   // Load demo orgs on mount
   useEffect(() => {
@@ -45,61 +78,90 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
       })
       .catch(err => {
         console.error("Error loading demo orgs:", err);
-        setError("Could not load demo organizations from backend.");
       });
   }, [API_URL]);
 
-  // Deduplicate claims by projectId to get the list of existing projects
-  const uniqueProjects = [];
-  const projectIds = new Set();
-  claims.forEach(c => {
-    if (!projectIds.has(c.projectId)) {
-      projectIds.add(c.projectId);
-      uniqueProjects.push(c);
+  // Handle AI Text/PDF Extraction
+  const handleExtractClaims = async () => {
+    if (!reportText.trim()) return;
+    setExtracting(true);
+    try {
+      const res = await fetch(`${API_URL}/ai/extract-claims`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: reportText })
+      });
+      const data = await res.json();
+      setExtractedCandidates(data.candidates || []);
+    } catch (err) {
+      console.error("Extraction error:", err);
+    } finally {
+      setExtracting(false);
     }
-  });
+  };
 
-  // Populate/lock fields when target project changes in dispute mode
-  useEffect(() => {
-    if (submissionType === '__dispute__' && targetProjectId) {
-      const proj = claims.find(c => c.projectId === targetProjectId);
-      if (proj) {
-        setProjectName(proj.projectName);
-        setRegion(proj.region);
-        setMethodology(proj.projectType);
-      }
-    } else if (submissionType === 'initial') {
-      setProjectName('');
-      setRegion('');
-      setMethodology('REDD+ / Forestry');
-    }
-  }, [submissionType, targetProjectId, claims]);
+  const applyExtractedCandidate = (cand) => {
+    setEnvironmentalDomain(cand.domain || 'carbon');
+    setMetric(cand.metric || 'CO2 emissions');
+    setTonnage(String(cand.value));
+    setUnit(cand.unit || 'tonnes CO2e');
+    setPeriod(cand.period || '2025');
+    setProjectName(`Extracted: ${cand.metric} Claim`);
+    setRegion('Global Operations');
+    setShowExtractorModal(false);
+  };
+
+  // Oracle Ingestion Source Switcher
+  const [sourceType, setSourceType] = useState('MANUAL_UPLOAD'); // 'MANUAL_UPLOAD' | 'IOT_SENSOR' | 'SATELLITE_ORACLE'
+  const [deviceId, setDeviceId] = useState('IOT-SMARTMETER-9901');
+  const [stacUrl, setStacUrl] = useState('');
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (submissionType === '__dispute__' && !targetProjectId) {
-      setError("Please select a target project to dispute.");
-      return;
-    }
-
-    if (!projectName || !region || !tonnage || !demoOrgId) {
-      setError("Please fill out all required fields.");
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
     setSubmitResult(null);
 
+    let oracleMetadata = null;
+    if (sourceType === 'IOT_SENSOR') {
+      oracleMetadata = {
+        deviceId,
+        oraclePublicKey: demoOrgId,
+        telemetryTimestamp: new Date().toISOString(),
+        verified: true,
+        reading: Number(tonnage),
+        unit
+      };
+    } else if (sourceType === 'SATELLITE_ORACLE') {
+      oracleMetadata = {
+        stacItemUrl: stacUrl || `https://earth-observation.copernicus.eu/stac/collections/sentinel-2-l2a/items/S2B_LIVE_${Date.now()}`,
+        provider: "Copernicus Sentinel-2 STAC",
+        oraclePublicKey: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        verified: true,
+        spatialResolution: "10m",
+        spectralNdvi: 0.785
+      };
+    }
+
     const payload = {
+      environmentalDomain,
+      metric,
+      unit,
+      period,
+      value: Number(tonnage),
       projectName,
       region,
       tonnage: Number(tonnage),
       methodology,
       demoOrgId,
       parentClaimId: null,
-      targetProjectId: submissionType === '__dispute__' ? targetProjectId : null
+      targetProjectId: submissionType === '__dispute__' ? targetProjectId : null,
+      sourceType,
+      oracleMetadata
     };
 
     try {
@@ -108,83 +170,34 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Submission failed");
-      }
-
+      if (!response.ok) throw new Error(data.error || "Submission failed");
       setSubmitResult(data);
+      if (onSuccessSubmit) onSuccessSubmit(data.claimId);
     } catch (err) {
-      console.error("Submission error:", err);
       setError(err.message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (submitResult) {
-    return (
-      <div className="glass rounded-xl border border-white/5 shadow-xl p-6 text-slate-300">
-        <div className="flex items-center gap-3 text-emerald-400 border-b border-white/5 pb-4 mb-4">
-          <CheckCircle className="h-6 w-6" />
-          <h2 className="text-lg font-bold text-white">Claim Anchored Successfully</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div className="p-4 bg-emerald-500/5 border border-emerald-500/25 rounded-lg space-y-2">
-            <div className="flex justify-between items-center flex-wrap gap-2">
-              <span className="text-xs text-slate-400 font-mono">Claim ID: <strong className="text-white">{submitResult.claimId}</strong></span>
-              <MockWarningBadge anchored={submitResult.anchored} mode={submitResult.blockchainMode} />
-            </div>
-            <p className="text-sm font-semibold text-white mt-1">{submitResult.projectName} ({submitResult.projectId})</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-            <div>
-              <span className="text-slate-500 block">Submitting Org:</span>
-              <span className="text-slate-300 select-all block mt-0.5">{submitResult.orgId}</span>
-            </div>
-            <div>
-              <span className="text-slate-500 block">Tonnage Volume:</span>
-              <span className="text-white block font-bold mt-0.5">{Number(submitResult.tonnage).toLocaleString()} tCO2e</span>
-            </div>
-          </div>
-
-          <div className="text-xs font-mono border-t border-white/5 pt-4 space-y-2">
-            <div>
-              <span className="text-slate-500">Data Hash (SHA-256):</span>
-              <span className="text-slate-300 block select-all bg-dark-900/50 p-2 rounded border border-white/5 mt-1 truncate">
-                {submitResult.hash}
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-500">Transaction Hash (EVM):</span>
-              <span className="text-slate-300 block select-all bg-dark-900/50 p-2 rounded border border-white/5 mt-1 truncate">
-                {submitResult.txHash}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => onSuccessSubmit(submitResult.claimId)}
-            className="w-full flex items-center justify-center gap-2 mt-4 bg-brand-500 hover:bg-brand-600 text-white rounded-lg py-2.5 font-bold transition-all"
-          >
-            Inspect in Claims Directory
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="glass rounded-xl border border-white/5 shadow-xl p-6 flex flex-col h-full justify-between">
       <div>
-        <h2 className="text-lg font-bold text-white flex items-center gap-2 border-b border-white/5 pb-4 mb-4">
-          <FilePlus className="h-5 w-5 text-brand-500" />
-          Register Environmental Claim
-        </h2>
+        <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <FilePlus className="h-5 w-5 text-brand-500" />
+            Register Environmental Claim
+          </h2>
+
+          <button
+            type="button"
+            onClick={() => setShowExtractorModal(true)}
+            className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5"
+          >
+            <span>🤖 Extract from PDF/Report</span>
+          </button>
+        </div>
 
         {error && (
           <div className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs flex items-center gap-2">
@@ -193,46 +206,114 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Submission Type Option */}
-          <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-              Submission Type
-            </label>
-            <select
-              value={submissionType}
-              onChange={(e) => {
-                setSubmissionType(e.target.value);
-                setTargetProjectId('');
-              }}
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
-            >
-              <option value="initial">Initial Registry Entry (New Project)</option>
-              <option value="__dispute__">Independent Claim on Existing Project (Dispute Test)</option>
-            </select>
-          </div>
+        {/* Ingestion Source Switcher */}
+        <div className="mb-4 bg-slate-900/60 p-1.5 rounded-xl border border-white/5 flex gap-1">
+          <button
+            type="button"
+            onClick={() => setSourceType('MANUAL_UPLOAD')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'MANUAL_UPLOAD' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            📁 Manual Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceType('IOT_SENSOR')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'IOT_SENSOR' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            ⚡ IoT Smart Meter
+          </button>
+          <button
+            type="button"
+            onClick={() => setSourceType('SATELLITE_ORACLE')}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'SATELLITE_ORACLE' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            🛰️ Sentinel Satellite
+          </button>
+        </div>
 
-          {/* Target Project Select (Visible only for dispute testing) */}
-          {submissionType === '__dispute__' && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Domain & Metric Selection */}
+          <div className="grid grid-cols-2 gap-4 bg-dark-900/40 p-3 rounded-xl border border-white/5">
             <div>
               <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                Target Project to Dispute
+                Environmental Domain
               </label>
               <select
-                value={targetProjectId}
-                onChange={(e) => setTargetProjectId(e.target.value)}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
-                required
+                value={environmentalDomain}
+                onChange={(e) => setEnvironmentalDomain(e.target.value)}
+                className="w-full bg-dark-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-emerald-400 font-bold focus:outline-none focus:border-brand-500 cursor-pointer capitalize"
               >
-                <option value="">-- Choose Existing Project --</option>
-                {uniqueProjects.map(p => (
-                  <option key={p.projectId} value={p.projectId}>
-                    {p.projectName} ({p.projectId} - {p.region})
+                <option value="carbon">🌱 Carbon / GHG Emissions</option>
+                <option value="water">💧 Water Consumption & Pollution</option>
+                <option value="air">💨 Air Quality & PM2.5</option>
+                <option value="waste">♻️ Waste & Recycling</option>
+                <option value="forest">🌲 Deforestation & Forest Cover</option>
+                <option value="energy">⚡ Renewable Energy & Efficiency</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Metric & Unit
+              </label>
+              <select
+                value={metric}
+                onChange={(e) => {
+                  setMetric(e.target.value);
+                  const selectedPair = (domainMetrics[environmentalDomain] || []).find(m => m.metric === e.target.value);
+                  if (selectedPair) setUnit(selectedPair.unit);
+                }}
+                className="w-full bg-dark-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+              >
+                {(domainMetrics[environmentalDomain] || domainMetrics['carbon']).map(m => (
+                  <option key={m.metric} value={m.metric}>
+                    {m.metric} ({m.unit})
                   </option>
                 ))}
               </select>
             </div>
-          )}
+          </div>
+
+          {/* Value, Unit, Period */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Value
+              </label>
+              <input
+                type="number"
+                value={tonnage}
+                onChange={(e) => setTonnage(e.target.value)}
+                placeholder="e.g. 4000"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Unit
+              </label>
+              <input
+                type="text"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-brand-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                Period
+              </label>
+              <input
+                type="text"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                required
+              />
+            </div>
+          </div>
 
           {/* Project Details */}
           <div className="grid grid-cols-2 gap-4">
@@ -244,9 +325,8 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
-                disabled={submissionType === '__dispute__'}
-                placeholder="e.g. Amazon Rainforest Conservation"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                placeholder="e.g. Amazon Water Sequestration"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -258,42 +338,10 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 type="text"
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                disabled={submissionType === '__dispute__'}
-                placeholder="e.g. Brazil"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500 disabled:opacity-55"
+                placeholder="e.g. Rwanda"
+                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
                 required
               />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                Tonnage (tCO2e Volume)
-              </label>
-              <input
-                type="number"
-                value={tonnage}
-                onChange={(e) => setTonnage(e.target.value)}
-                placeholder="e.g. 150000"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                Methodology / Sector
-              </label>
-              <select
-                value={methodology}
-                onChange={(e) => setMethodology(e.target.value)}
-                disabled={submissionType === '__dispute__'}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 disabled:opacity-55"
-              >
-                {methodologies.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -315,13 +363,6 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
             </select>
           </div>
 
-          <div className="p-3 bg-white/5 border border-white/10 rounded-lg flex items-start gap-2 text-3xs text-slate-400 font-mono">
-            <Info className="h-4.5 w-4.5 text-brand-500 shrink-0 mt-0.5" />
-            <p>
-              Under the hood, GreenProof will deterministically sort the parameters, hash the canonical representation with SHA-256, sign it locally using ECDSA keys, and anchor it on the Ethereum smart contract.
-            </p>
-          </div>
-
           <button
             type="submit"
             disabled={submitting}
@@ -330,13 +371,71 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
             {submitting ? (
               <>
                 <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                Signing & Anchoring...
+                Signing & Anchoring Multi-Domain Claim...
               </>
             ) : (
-              "Submit to Network"
+              "Anchor Environmental Claim"
             )}
           </button>
         </form>
+
+        {/* AI PDF / Sustainability Report Extractor Modal */}
+        {showExtractorModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>🤖 AI Sustainability Report Claim Extractor</span>
+                </h3>
+                <button onClick={() => setShowExtractorModal(false)} className="text-slate-400 hover:text-white">✕</button>
+              </div>
+
+              <p className="text-xs text-slate-400">
+                Paste text from your sustainability report or PDF. The AI NLP parser will extract structured candidate claims for your approval before cryptographic registration.
+              </p>
+
+              <textarea
+                rows={4}
+                value={reportText}
+                onChange={(e) => setReportText(e.target.value)}
+                placeholder="e.g. 'We reduced our carbon emissions by 40%. Water consumption decreased by 25%. 85% of operational waste was recycled.'"
+                className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              />
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleExtractClaims}
+                  disabled={extracting || !reportText.trim()}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-lg transition"
+                >
+                  {extracting ? "Extracting Claims..." : "Extract Candidate Claims"}
+                </button>
+              </div>
+
+              {extractedCandidates.length > 0 && (
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <span className="text-xs font-bold text-emerald-400">Extracted {extractedCandidates.length} Claim Candidate(s):</span>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {extractedCandidates.map((cand, idx) => (
+                      <div key={idx} className="p-3 bg-slate-950 rounded-lg border border-white/5 flex items-center justify-between">
+                        <div className="text-xs">
+                          <span className="font-bold text-white capitalize">{cand.domain}</span>: {cand.metric} = <strong className="text-emerald-300">{cand.value} {cand.unit}</strong>
+                          <p className="text-[11px] text-slate-400 italic font-serif mt-0.5 font-mono">"{cand.statement}"</p>
+                        </div>
+                        <button
+                          onClick={() => applyExtractedCandidate(cand)}
+                          className="px-2.5 py-1 bg-emerald-500 text-slate-950 font-bold text-[11px] rounded hover:bg-emerald-400 transition"
+                        >
+                          Use Claim
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

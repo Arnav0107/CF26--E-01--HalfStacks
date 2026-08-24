@@ -6,13 +6,17 @@ const { ethers } = require('ethers');
  */
 function canonicalizeClaim(claim) {
   const normalized = {
+    environmentalDomain: (claim.environmentalDomain || 'carbon').toLowerCase(),
+    metric: claim.metric || 'CO2 emissions',
     orgId: claim.orgId.toLowerCase(),
     parentHash: claim.parentHash || null,
+    period: claim.period || '2025',
     projectId: claim.projectId,
     projectName: claim.projectName,
     projectType: claim.projectType,
     region: claim.region,
-    tonnage: Number(claim.tonnage)
+    tonnage: Number(claim.tonnage !== undefined ? claim.tonnage : (claim.value !== undefined ? claim.value : 0)),
+    unit: claim.unit || 'tonnes CO2e'
   };
 
   const sortedKeys = Object.keys(normalized).sort();
@@ -44,6 +48,10 @@ function verifySignature(canonicalHash, signature, orgId) {
     // which corresponds exactly to Python's encode_defunct(hexstr=hashHex)
     const messageBytes = ethers.getBytes(hashHex);
     const recoveredAddress = ethers.verifyMessage(messageBytes, sigHex);
+
+    if (recoveredAddress.toLowerCase() !== orgId.toLowerCase()) {
+      console.log(`[SIG_FAIL] Recovered: ${recoveredAddress.toLowerCase()}, Expected: ${orgId.toLowerCase()}, Hash: ${hashHex}`);
+    }
 
     return recoveredAddress.toLowerCase() === orgId.toLowerCase();
   } catch (err) {

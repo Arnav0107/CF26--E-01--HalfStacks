@@ -56,18 +56,32 @@ async function connectDB() {
     projectName: { type: String, required: true },
     region: { type: String, required: true },
     projectType: { type: String, required: true },
+    environmentalDomain: { type: String, default: 'carbon' },
+    metric: { type: String, default: 'CO2 emissions' },
+    value: { type: Number, default: 0 },
+    unit: { type: String, default: 'tonnes CO2e' },
+    period: { type: String, default: '2025' },
     tonnage: { type: Number, required: true },
     orgId: { type: String, required: true },
     hash: { type: String, required: true },
     signature: { type: String, required: true },
     parentHash: { type: String, default: null },
     version: { type: Number, default: 1 },
-    status: { type: String, enum: ['active', 'superseded', 'disputed'], default: 'active' },
+    status: { type: String, enum: ['active', 'superseded', 'disputed', 'resolved', 'draft', 'requires_review'], default: 'active' },
     txHash: { type: String, required: true },
     anchored: { type: Boolean, default: false },
     blockchainMode: { type: String, enum: ['on-chain', 'mock'], default: 'mock' },
     timestamp: { type: Number, required: true },
-    notes: { type: String, default: '' }
+    notes: { type: String, default: '' },
+    evidenceSource: { type: String, default: '' },
+    evidenceHash: { type: String, default: '' },
+    consistencyResult: { type: Object, default: null },
+    anomalyResult: { type: Object, default: null },
+    sourceType: { type: String, enum: ['MANUAL_UPLOAD', 'IOT_SENSOR', 'SATELLITE_ORACLE'], default: 'MANUAL_UPLOAD' },
+    oracleMetadata: { type: Object, default: null },
+    ghgScope: { type: String, enum: ['Scope 1', 'Scope 2', 'Scope 3'], default: 'Scope 1' },
+    csrdStandard: { type: String, enum: ['ESRS E1', 'ESRS E2', 'ESRS E3', 'ESRS E4', 'ESRS E5'], default: 'ESRS E1' },
+    complianceMetadata: { type: Object, default: null }
   });
 
   const OrgSchema = new mongoose.Schema({
@@ -98,14 +112,21 @@ const db = {
     }
   },
 
-  async updateClaimStatus(claimId, status) {
+  async updateClaimStatus(claimId, status, notes = null) {
+    const updateObj = { status };
+    if (notes !== null) {
+      updateObj.notes = notes;
+    }
     if (useMongo) {
-      return await ClaimModel.findOneAndUpdate({ claimId }, { status }, { new: true });
+      return await ClaimModel.findOneAndUpdate({ claimId }, updateObj, { new: true });
     } else {
       const claims = readJsonFile(CLAIMS_FILE);
       const claim = claims.find(c => c.claimId === claimId);
       if (claim) {
         claim.status = status;
+        if (notes !== null) {
+          claim.notes = notes;
+        }
         writeJsonFile(CLAIMS_FILE, claims);
       }
       return claim;

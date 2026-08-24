@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, LayoutDashboard, PlusCircle } from 'lucide-react';
+import { ShieldCheck, Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, LayoutDashboard, PlusCircle, Award } from 'lucide-react';
 import DashboardStats from './components/DashboardStats';
 import ClaimsDirectory from './components/ClaimsDirectory';
 import ClaimTimeline from './components/ClaimTimeline';
@@ -7,6 +7,9 @@ import DisputesPanel from './components/DisputesPanel';
 import TamperLab from './components/TamperLab';
 import SubmitClaimForm from './components/SubmitClaimForm';
 import UpdateClaimForm from './components/UpdateClaimForm';
+import ProvenanceGraphModal from './components/ProvenanceGraphModal';
+import ComplianceDashboard from './components/ComplianceDashboard';
+import OracleTelemetryModal from './components/OracleTelemetryModal';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -19,12 +22,13 @@ export default function App() {
   const [error, setError] = useState(null);
   const [blockchainConnected, setBlockchainConnected] = useState(false);
   const [contractFound, setContractFound] = useState(false);
+  const [graphClaimModal, setGraphClaimModal] = useState(null);
+  const [oracleModalClaim, setOracleModalClaim] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch claims, disputes, and status in parallel
       const [claimsRes, disputesRes, statusRes] = await Promise.all([
         fetch(`${API_URL}/claims`),
         fetch(`${API_URL}/disputes`),
@@ -51,7 +55,6 @@ export default function App() {
       setClaims(claimsData);
       setDisputes(disputesData);
 
-      // Auto-select first claim if none selected and claims exist
       if (claimsData.length > 0 && !selectedClaimId) {
         setSelectedClaimId(claimsData[0].claimId);
       }
@@ -83,10 +86,10 @@ export default function App() {
             <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
               GreenProof
               <span className="text-4xs font-mono font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
-                PROVENANCE NETWORK
+                EVIDENCE NETWORK
               </span>
             </h1>
-            <p className="text-3xs text-slate-400 font-mono mt-0.5">Decentralized Environmental Data Integrity Network</p>
+            <p className="text-3xs text-slate-400 font-mono mt-0.5">Environmental Evidence Verification & Provenance Network</p>
           </div>
         </div>
 
@@ -179,6 +182,17 @@ export default function App() {
                 Tamper Lab
               </button>
               <button
+                onClick={() => setActiveTab('compliance')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'compliance' 
+                    ? 'bg-emerald-600 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Award className="h-4 w-4" />
+                Regulatory Compliance
+              </button>
+              <button
                 onClick={() => setActiveTab('submit')}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'submit' 
@@ -209,7 +223,12 @@ export default function App() {
                   claims={claims} 
                   onSelectClaim={handleSelectClaim} 
                   selectedClaimId={selectedClaimId} 
+                  onViewProvenanceGraph={(claim) => setGraphClaimModal(claim)}
+                  onViewOracleModal={(claim) => setOracleModalClaim(claim)}
                 />
+              )}
+              {activeTab === 'compliance' && (
+                <ComplianceDashboard claims={claims} />
               )}
               {activeTab === 'disputes' && (
                 <DisputesPanel 
@@ -218,6 +237,8 @@ export default function App() {
                     handleSelectClaim(id);
                     setActiveTab('directory');
                   }} 
+                  onRefreshData={fetchData}
+                  API_URL={API_URL}
                 />
               )}
               {activeTab === 'tamper' && (
@@ -258,13 +279,31 @@ export default function App() {
               claimId={selectedClaimId} 
               claims={claims} 
               API_URL={API_URL} 
+              onViewProvenanceGraph={(claim) => setGraphClaimModal(claim)}
             />
           </div>
         </div>
       </main>
 
+      {/* Provenance Lineage Graph Modal */}
+      {graphClaimModal && (
+        <ProvenanceGraphModal
+          claim={graphClaimModal}
+          API_URL={API_URL}
+          onClose={() => setGraphClaimModal(null)}
+        />
+      )}
+
+      {/* Oracle Telemetry Verification Modal */}
+      {oracleModalClaim && (
+        <OracleTelemetryModal
+          claim={oracleModalClaim}
+          onClose={() => setOracleModalClaim(null)}
+        />
+      )}
+
       <footer className="mt-auto py-6 px-6 border-t border-white/5 text-center text-3xs text-slate-500 font-mono">
-        &copy; {new Date().getFullYear()} GreenProof Environmental Provenance Network. Cryptographically Secured via ECDSA & Blockchain Anchor hashes.
+        &copy; {new Date().getFullYear()} GreenProof Environmental Verification Network. Cryptographically Secured via ECDSA & EVM Blockchain Anchors.
       </footer>
     </div>
   );

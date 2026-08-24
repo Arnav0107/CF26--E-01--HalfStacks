@@ -106,7 +106,8 @@ async function anchorClaim(claimId, dataHash, parentHash, signature) {
 
   if (status.connected && status.contractFound) {
     try {
-      const tx = await contract.anchorClaim(claimIdBytes32, dataHashBytes32, parentHashBytes32, sigBytes);
+      const nonce = await provider.getTransactionCount(wallet.address, "pending");
+      const tx = await contract.anchorClaim(claimIdBytes32, dataHashBytes32, parentHashBytes32, sigBytes, { nonce });
       const receipt = await tx.wait();
       console.log(`Claim ${claimId} anchored on-chain! Tx: ${receipt.hash}`);
       return {
@@ -115,7 +116,7 @@ async function anchorClaim(claimId, dataHash, parentHash, signature) {
         mode: "on-chain"
       };
     } catch (err) {
-      console.error(`[BLOCKCHAIN ERROR] On-chain anchoring failed for claim ${claimId}:`, err);
+      console.error(`[BLOCKCHAIN ERROR] On-chain anchoring failed for claim ${claimId}:`, err.message);
       // Fallback to mock on error
     }
   }

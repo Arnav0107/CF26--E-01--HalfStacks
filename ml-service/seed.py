@@ -77,26 +77,16 @@ def load_carbon_data():
     owid_url = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv"
     print(f"Attempting to pull carbon/GHG seed values from Our World in Data...")
     try:
-        req = urllib.request.Request(
-            owid_url, 
-            headers={'User-Agent': 'Mozilla/5.0'}
-        )
-        with urllib.request.urlopen(req, timeout=5) as response:
-            html = response.read().decode('utf-8')
-            lines = html.split('\n')
-            
-            # Find column headers
+        res = requests.get(owid_url, timeout=2, headers={'User-Agent': 'Mozilla/5.0'})
+        if res.status_code == 200:
+            lines = res.text.split('\n')
             header = lines[0].split(',')
-            try:
-                country_idx = header.index("country")
-                year_idx = header.index("year")
-                co2_idx = header.index("co2")
-            except ValueError:
-                raise Exception("Missing standard columns in OWID CSV")
+            country_idx = header.index("country")
+            year_idx = header.index("year")
+            co2_idx = header.index("co2")
 
             projects = []
             count = 0
-            # Read rows, looking for recent (2020-2023) records with valid CO2 figures
             for line in lines[1:]:
                 if not line.strip():
                     continue
@@ -112,7 +102,6 @@ def load_carbon_data():
                     try:
                         year = int(year_str)
                         co2 = float(co2_str)
-                        # Filter for countries/regions for recent years to act as project records
                         if year >= 2021 and co2 > 10.0 and len(country) < 30 and not country.lower().endswith("income"):
                             project_id = f"OWID-{country.upper()[:3]}-{year}"
                             projects.append({
@@ -120,7 +109,7 @@ def load_carbon_data():
                                 "projectName": f"{country} National GHG Reduction Goal ({year})",
                                 "region": country,
                                 "projectType": "Nationally Determined Contribution (NDC)",
-                                "tonnage": int(co2 * 100000)  # Scale to tons of CO2
+                                "tonnage": int(co2 * 100000)
                             })
                             count += 1
                             if count >= 35:
@@ -190,18 +179,23 @@ def canonicalize_claim(claim):
     Deterministic stringification of a claim payload by sorting keys.
     Must match backend's canonicalizeClaim exactly.
     """
+    val = claim.get("value") if claim.get("value") is not None else claim.get("tonnage", 0)
     normalized = {
+        "environmentalDomain": (claim.get("environmentalDomain") or "carbon").lower(),
+        "metric": claim.get("metric") or "CO2 emissions",
         "orgId": claim["orgId"].lower(),
         "parentHash": claim.get("parentHash") or None,
+        "period": claim.get("period") or "2025",
         "projectId": claim["projectId"],
         "projectName": claim["projectName"],
-        "region": claim["region"],
         "projectType": claim["projectType"],
-        "tonnage": int(claim["tonnage"])
+        "region": claim["region"],
+        "tonnage": int(val),
+        "unit": claim.get("unit") or "tonnes CO2e"
     }
     # Sort keys alphabetically
     sorted_normalized = {k: normalized[k] for k in sorted(normalized.keys())}
-    return json.dumps(sorted_normalized, separators=(',', ':'))
+    return json.dumps(sorted_normalized, separators=(',', ':'), ensure_ascii=False)
 
 def sign_hash(hash_hex, private_key_hex):
     """
@@ -244,17 +238,47 @@ def main():
 
     # Step 3: Submit initial claims through the API pipeline
     print(f"Submitting {len(records)} initial claims to pipeline...")
+    domains_map = ['carbon', 'water', 'air', 'waste', 'forest', 'energy']
+    metrics_map = {
+        'carbon': ('CO2 emissions', 'tonnes CO2e'),
+        'water': ('Water consumption', 'million litres'),
+        'air': ('PM2.5 index', 'µg/m³'),
+        'waste': ('Recycled waste', '%'),
+        'forest': ('Forest cover', 'hectares'),
+        'energy': ('Renewable energy share', '%')
+    }
+
     for idx, record in enumerate(records):
-        claim_id = f"seed-claim-{idx+1:03d}"
+        claim_id = f"seed-v3-claim-{idx+1:03d}"
         org = random.choice(orgs)
+
+        domain = domains_map[idx % len(domains_map)]
+        metric, unit = metrics_map[domain]
+        val = int(record["tonnage"])
+
+        # Attach evidence dataset
+        evidence_data = {
+            "baselineEmissions": int(val * 1.4),
+            "currentEmissions": val,
+            "baselineUsage": int(val * 1.3),
+            "currentUsage": val,
+            "recycledWaste": int(val * 0.85),
+            "totalWaste": val,
+            "monthlyEmissions": [int(val * 0.08), int(val * 0.085), int(val * 0.078), int(val * (0.02 if idx % 5 == 0 else 0.082)), int(val * 0.084)]
+        }
 
         # Build payload
         payload = {
+            "environmentalDomain": domain,
+            "metric": metric,
+            "unit": unit,
+            "period": "2025",
             "projectId": record["projectId"],
             "projectName": record["projectName"],
             "region": record["region"],
             "projectType": record["projectType"],
-            "tonnage": int(record["tonnage"]),
+            "tonnage": val,
+            "value": val,
             "orgId": org["orgId"],
             "parentHash": None
         }
@@ -264,6 +288,32 @@ def main():
         claim_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
         signature = sign_hash(claim_hash, org["privateKey"])
 
+        # Determine Oracle Source Type & Metadata for Seeding
+        if idx % 3 == 1:
+            source_type = "IOT_SENSOR"
+            oracle_metadata = {
+                "deviceId": f"IOT-SMARTMETER-{idx+101:04d}",
+                "oraclePublicKey": org["orgId"],
+                "telemetryTimestamp": "2025-06-15T12:00:00Z",
+                "verified": True,
+                "reading": val,
+                "unit": unit
+            }
+        elif idx % 3 == 2:
+            source_type = "SATELLITE_ORACLE"
+            oracle_metadata = {
+                "stacItemUrl": f"https://earth-observation.copernicus.eu/stac/collections/sentinel-2-l2a/items/S2B_MSIL2A_2025_{idx+101:03d}",
+                "stacItemId": f"S2B_MSIL2A_2025_{idx+101:03d}",
+                "provider": "Copernicus Sentinel-2 STAC",
+                "oraclePublicKey": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+                "verified": True,
+                "spatialResolution": "10m",
+                "spectralNdvi": 0.785
+            }
+        else:
+            source_type = "MANUAL_UPLOAD"
+            oracle_metadata = None
+
         # Submit to REST API
         post_data = {
             "claimId": claim_id,
@@ -271,9 +321,18 @@ def main():
             "projectName": record["projectName"],
             "region": record["region"],
             "projectType": record["projectType"],
-            "tonnage": int(record["tonnage"]),
+            "environmentalDomain": domain,
+            "metric": metric,
+            "value": val,
+            "unit": unit,
+            "period": "2025",
+            "tonnage": val,
             "orgId": org["orgId"],
-            "signature": signature
+            "signature": signature,
+            "evidenceData": evidence_data,
+            "evidenceSource": "Verra / Berkeley Carbon & Telemetry Sensors",
+            "sourceType": source_type,
+            "oracleMetadata": oracle_metadata
         }
 
         response = requests.post(f"{API_URL}/claims", json=post_data)
@@ -285,133 +344,136 @@ def main():
             if record["projectId"] not in projectId_to_claims:
                 projectId_to_claims[record["projectId"]] = []
             projectId_to_claims[record["projectId"]].append(res_json)
+            print(f"[{idx+1}/{len(records)}] Anchored claim {claim_id} ({record['projectId']} - {domain}): {response.status_code}")
         else:
             print(f"Failed to submit claim {claim_id}: {response.text}")
 
     print(f"Successfully anchored and stored {len(submitted_claims)} base claims.")
 
-    # Step 4: Generate corrections (~20% of claims)
-    # 20% of 40 = 8 claims
-    num_corrections = int(len(submitted_claims) * 0.2)
-    claims_to_correct = random.sample(submitted_claims, num_corrections)
-    
-    correction_chains = []
+    # Step 4: Generate Correction Chains for ~20% of claims
+    num_to_correct = max(1, int(len(submitted_claims) * 0.2))
+    claims_to_correct = random.sample(submitted_claims, num_to_correct)
+    print(f"Generating correction chains for ~20% ({num_to_correct}) of claims...")
+
     correction_count = 0
+    correction_chains = []
+    for corr_idx, parent_claim in enumerate(claims_to_correct):
+        corr_claim_id = f"seed-v3-corr-{parent_claim['claimId']}-{corr_idx+1}"
+        org = next((o for o in orgs if o["orgId"].lower() == parent_claim["orgId"].lower()), orgs[0])
 
-    print(f"Generating correction chains for ~20% ({num_corrections}) of claims...")
-    correction_notes = [
-        "Sensor recalibration for July auditing cycle",
-        "Methodology coefficient update for forest-canopy density",
-        "Audited satellite imagery baseline adjustment",
-        "Revised leakage calculation factors",
-        "Ground-truth biomass survey calibration"
-    ]
+        new_tonnage = int(parent_claim["tonnage"] * random.choice([0.92, 0.95, 1.05, 1.08]))
+        domain = parent_claim.get("environmentalDomain") or "carbon"
+        metric = parent_claim.get("metric") or "CO2 emissions"
+        unit = parent_claim.get("unit") or "tonnes CO2e"
 
-    for parent in claims_to_correct:
-        correction_count += 1
-        new_claim_id = f"seed-correct-{correction_count:03d}"
-        
-        # Calculate plausible adjustment: delta 3-8% (positive or negative)
-        adjustment_factor = 1.0 + (random.choice([-1, 1]) * random.uniform(0.03, 0.08))
-        new_tonnage = int(parent["tonnage"] * adjustment_factor)
-        notes = random.choice(correction_notes)
-
-        # Get parent submitting org
-        org = next(o for o in orgs if o["orgId"] == parent["orgId"])
-
-        # Build payload with parentHash
         payload = {
-            "projectId": parent["projectId"],
-            "projectName": parent["projectName"],
-            "region": parent["region"],
-            "projectType": parent["projectType"],
+            "environmentalDomain": domain,
+            "metric": metric,
+            "unit": unit,
+            "period": "2025",
+            "projectId": parent_claim["projectId"],
+            "projectName": parent_claim["projectName"],
+            "region": parent_claim["region"],
+            "projectType": parent_claim["projectType"],
             "tonnage": new_tonnage,
-            "orgId": org["orgId"],
-            "parentHash": parent["hash"]
+            "value": new_tonnage,
+            "orgId": parent_claim["orgId"].lower(),
+            "parentHash": parent_claim["hash"]
         }
 
-        # Canonicalize, Hash, Sign
         canonical = canonicalize_claim(payload)
+        print(f"[DEBUG CORR PY] Canonical: {canonical}")
         claim_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
         signature = sign_hash(claim_hash, org["privateKey"])
 
-        # POST /claims/:id/correct
         post_data = {
-            "claimId": new_claim_id,
+            "claimId": corr_claim_id,
+            "projectId": parent_claim["projectId"],
+            "projectName": parent_claim["projectName"],
+            "region": parent_claim["region"],
+            "projectType": parent_claim["projectType"],
+            "environmentalDomain": domain,
+            "metric": metric,
+            "value": new_tonnage,
+            "unit": unit,
+            "period": "2025",
             "tonnage": new_tonnage,
-            "notes": notes,
-            "orgId": org["orgId"],
-            "signature": signature
+            "orgId": parent_claim["orgId"],
+            "signature": signature,
+            "parentClaimId": parent_claim["claimId"],
+            "evidenceSource": "Audit Revision Dataset"
         }
 
-        response = requests.post(f"{API_URL}/claims/{parent['claimId']}/correct", json=post_data)
+        response = requests.post(f"{API_URL}/claims/{parent_claim['claimId']}/correct", json=post_data)
         import time
         time.sleep(0.4)
         if response.status_code == 201:
-            corrected = response.json()
-            correction_chains.append({
-                "originalClaimId": parent["claimId"],
-                "correctedClaimId": corrected["claimId"],
-                "versions": [parent["claimId"], corrected["claimId"]],
-                "notes": notes,
-                "deltaPercent": f"{round((adjustment_factor - 1.0)*100, 2)}%"
-            })
-            # Update local lookup
-            projectId_to_claims[parent["projectId"]].append(corrected)
+            correction_count += 1
+            correction_chains.append(response.json())
+            print(f"Created correction claim {corr_claim_id} for parent {parent_claim['claimId']}")
         else:
-            print(f"Failed to submit correction {new_claim_id}: {response.text}")
+            print(f"Failed to create correction claim {corr_claim_id}: {response.text}")
 
-    print(f"Successfully processed {len(correction_chains)} correction updates.")
+    print(f"Successfully processed {correction_count} correction updates.")
 
-    # Step 5: Generate disputed claims (Pick 2 seed records and submit conflicts)
-    disputed_claims = []
-    # Find projects with single claims to dispute
-    single_claim_projects = [pid for pid, clist in projectId_to_claims.items() if len(clist) == 1]
-    dispute_targets = random.sample(single_claim_projects, min(2, len(single_claim_projects)))
-
-    print(f"Simulating disputes: generating conflicting reports for {len(dispute_targets)} projects...")
+    # Step 5: Simulate Disputes (Conflicting claims for same project from DIFFERENT orgs)
+    candidate_projects = [pid for pid, clist in projectId_to_claims.items() if len(clist) >= 1]
+    num_disputes = min(3, len(candidate_projects))
+    disputed_project_ids = random.sample(candidate_projects, num_disputes)
+    print(f"Simulating disputes: generating conflicting reports for {num_disputes} projects...")
     
     dispute_count = 0
-    for project_id in dispute_targets:
-        dispute_count += 1
-        original_claim = projectId_to_claims[project_id][0]
-        
-        # Pick a DIFFERENT organization to submit the dispute
-        other_orgs = [o for o in orgs if o["orgId"] != original_claim["orgId"]]
-        disputing_org = random.choice(other_orgs)
+    disputed_claims = []
+    for dispute_idx, pid in enumerate(disputed_project_ids):
+        base_claim = projectId_to_claims[pid][0]
+        dispute_claim_id = f"seed-v3-dispute-{dispute_idx+1:02d}"
 
-        # Tonnage off by 15-30%
-        conflict_factor = 1.0 + (random.choice([-1, 1]) * random.uniform(0.15, 0.30))
-        disputed_tonnage = int(original_claim["tonnage"] * conflict_factor)
+        different_orgs = [o for o in orgs if o["orgId"].lower() != base_claim["orgId"].lower()]
+        conflicting_org = random.choice(different_orgs)
 
-        dispute_claim_id = f"seed-dispute-{dispute_count:03d}"
+        divergent_factor = random.choice([0.65, 0.70, 1.35, 1.40])
+        conflicting_tonnage = int(base_claim["tonnage"] * divergent_factor)
+        domain = base_claim.get("environmentalDomain") or "carbon"
+        metric = base_claim.get("metric") or "CO2 emissions"
+        unit = base_claim.get("unit") or "tonnes CO2e"
 
         # Payload
         payload = {
-            "projectId": original_claim["projectId"],
-            "projectName": original_claim["projectName"],
-            "region": original_claim["region"],
-            "projectType": original_claim["projectType"],
-            "tonnage": disputed_tonnage,
-            "orgId": disputing_org["orgId"],
+            "environmentalDomain": domain,
+            "metric": metric,
+            "unit": unit,
+            "period": "2025",
+            "projectId": base_claim["projectId"],
+            "projectName": base_claim["projectName"],
+            "region": base_claim["region"],
+            "projectType": base_claim["projectType"],
+            "tonnage": conflicting_tonnage,
+            "value": conflicting_tonnage,
+            "orgId": conflicting_org["orgId"].lower(),
             "parentHash": None
         }
 
         # Canonicalize, Hash, Sign
         canonical = canonicalize_claim(payload)
         claim_hash = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
-        signature = sign_hash(claim_hash, disputing_org["privateKey"])
+        signature = sign_hash(claim_hash, conflicting_org["privateKey"])
 
         # POST /claims (it's submitted as a new independent claim for the same project)
         post_data = {
             "claimId": dispute_claim_id,
-            "projectId": original_claim["projectId"],
-            "projectName": original_claim["projectName"],
-            "region": original_claim["region"],
-            "projectType": original_claim["projectType"],
-            "tonnage": disputed_tonnage,
-            "orgId": disputing_org["orgId"],
-            "signature": signature
+            "projectId": base_claim["projectId"],
+            "projectName": base_claim["projectName"],
+            "region": base_claim["region"],
+            "projectType": base_claim["projectType"],
+            "environmentalDomain": domain,
+            "metric": metric,
+            "value": conflicting_tonnage,
+            "unit": unit,
+            "period": "2025",
+            "tonnage": conflicting_tonnage,
+            "orgId": conflicting_org["orgId"],
+            "signature": signature,
+            "evidenceSource": "Conflicting Telemetry Dataset B"
         }
 
         response = requests.post(f"{API_URL}/claims", json=post_data)
@@ -419,16 +481,17 @@ def main():
         time.sleep(0.4)
         if response.status_code == 201:
             disputed_record = response.json()
+            dispute_count += 1
+            print(f"Created conflicting claim {dispute_claim_id} for project {pid} ({base_claim['tonnage']} vs {conflicting_tonnage})")
             disputed_claims.append({
-                "projectId": project_id,
-                "projectName": original_claim["projectName"],
-                "originalClaimId": original_claim["claimId"],
+                "projectId": pid,
+                "projectName": base_claim["projectName"],
+                "originalClaimId": base_claim["claimId"],
                 "disputedClaimId": disputed_record["claimId"],
-                "originalTonnage": original_claim["tonnage"],
-                "disputedTonnage": disputed_tonnage,
-                "deltaPercent": f"{round((conflict_factor - 1.0)*100, 2)}%"
+                "disputedTonnage": conflicting_tonnage,
+                "deltaPercent": f"{round((divergent_factor - 1.0)*100, 2)}%"
             })
-            projectId_to_claims[project_id].append(disputed_record)
+            projectId_to_claims[pid].append(disputed_record)
         else:
             print(f"Failed to submit disputed claim {dispute_claim_id}: {response.text}")
 

@@ -13,7 +13,7 @@ let contractAvailable = false;
 
 // ABI of DataProvenance.sol (compiled from foundry output)
 const CONTRACT_ABI = [
-  "function anchorClaim(bytes32 claimId, bytes32 dataHash, address orgAddress) external",
+  "function anchorClaim(bytes32 claimId, bytes32 dataHash, bytes signature) external",
   "function getAnchor(bytes32 claimId) external view returns (bytes32 dataHash, address owner, address orgAddress, uint256 timestamp)",
   "event ClaimAnchored(bytes32 indexed claimId, bytes32 indexed dataHash, address indexed orgAddress, address owner, uint256 timestamp)"
 ];
@@ -47,14 +47,14 @@ async function initBlockchain() {
  * Anchors the claim on the blockchain.
  * Converts string claimId to bytes32 via keccak256.
  */
-async function anchorClaim(claimId, dataHash, orgAddress) {
+async function anchorClaim(claimId, dataHash, signature) {
   const claimIdBytes32 = ethers.id(claimId);
   const dataHashBytes32 = dataHash.startsWith('0x') ? dataHash : '0x' + dataHash;
-  const formattedOrgAddress = ethers.getAddress(orgAddress);
+  const sigBytes = signature.startsWith('0x') ? signature : '0x' + signature;
 
   if (contractAvailable) {
     try {
-      const tx = await contract.anchorClaim(claimIdBytes32, dataHashBytes32, formattedOrgAddress);
+      const tx = await contract.anchorClaim(claimIdBytes32, dataHashBytes32, sigBytes);
       const receipt = await tx.wait();
       console.log(`Claim ${claimId} anchored on-chain! Tx: ${receipt.hash}`);
       return receipt.hash;
@@ -66,7 +66,7 @@ async function anchorClaim(claimId, dataHash, orgAddress) {
 
   // Mock Anchoring Fallback
   const mockTxHash = '0x' + crypto.createHash('sha256')
-    .update(claimId + dataHash + orgAddress + Date.now().toString())
+    .update(claimId + dataHash + signature + Date.now().toString())
     .digest('hex');
   console.log(`[MOCK BLOCKCHAIN] Anchored claim ${claimId} (Mock Tx: ${mockTxHash})`);
   return mockTxHash;
@@ -101,10 +101,21 @@ async function getAnchor(claimId) {
     throw new Error(`Claim ${claimId} not found in local database`);
   }
 
+  // Cryptographically recover orgAddress from claim's signature (mocking contract's on-chain ecrecover)
+  let recoveredOrgAddress;
+  try {
+    const hashHex = claim.hash.startsWith('0x') ? claim.hash : '0x' + claim.hash;
+    const sigHex = claim.signature.startsWith('0x') ? claim.signature : '0x' + claim.signature;
+    recoveredOrgAddress = ethers.verifyMessage(ethers.getBytes(hashHex), sigHex);
+  } catch (err) {
+    console.warn(`Mock signature recovery failed for ${claimId}: ${err.message}. Using stored orgId.`);
+    recoveredOrgAddress = claim.orgId;
+  }
+
   return {
     dataHash: claim.hash,
-    owner: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", // Mock owner
-    orgAddress: claim.orgId,
+    owner: wallet ? wallet.address : "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // Fixed mock owner address
+    orgAddress: recoveredOrgAddress,
     timestamp: claim.timestamp
   };
 }

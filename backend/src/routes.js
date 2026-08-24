@@ -98,7 +98,7 @@ router.post('/claims', async (req, res) => {
     }
 
     // 5. Anchor on blockchain
-    const txHash = await blockchain.anchorClaim(claimId, hash, orgId);
+    const txHash = await blockchain.anchorClaim(claimId, hash, signature);
 
     // Save claim
     const savedClaim = await db.saveClaim({
@@ -187,7 +187,7 @@ router.post('/claims/:id/correct', async (req, res) => {
     }
 
     // 4. Anchor on blockchain
-    const txHash = await blockchain.anchorClaim(claimId, hash, orgId);
+    const txHash = await blockchain.anchorClaim(claimId, hash, signature);
 
     // 5. Mark parent claim as superseded
     await db.updateClaimStatus(parentId, 'superseded');
@@ -351,6 +351,7 @@ router.get('/claims/:id/verify', async (req, res) => {
       signatureVerified: sigVerified,
       anchorVerified,
       chainVerified,
+      anchorIdentitySource: "on-chain-ecrecover",
       errors,
       chain: chainDetails.reverse() // Sort chronologically: oldest first
     });

@@ -64,6 +64,33 @@ async function initBlockchain() {
 }
 
 /**
+ * Dynamically queries blockchain node connectivity and deployed bytecode presence.
+ */
+async function checkBlockchainStatus() {
+  if (!provider) {
+    return { connected: false, contractFound: false };
+  }
+  try {
+    // 1. Verify RPC connection reachability
+    await provider.getNetwork();
+    
+    // If contract configuration is missing
+    if (!contract) {
+      return { connected: true, contractFound: false };
+    }
+
+    // 2. Query contract bytecode presence to verify contract is actually deployed on the active network state
+    const address = contract.target || contract.address;
+    const code = await provider.getCode(address);
+    const contractFound = (code !== "0x" && code !== "0x0" && code !== "0x00" && code !== "");
+    
+    return { connected: true, contractFound };
+  } catch (err) {
+    return { connected: false, contractFound: false };
+  }
+}
+
+/**
  * Anchors the claim on the blockchain.
  * Returns { txHash, anchored: boolean, mode: "on-chain" | "mock" }
  */
@@ -75,7 +102,9 @@ async function anchorClaim(claimId, dataHash, parentHash, signature) {
     : ethers.ZeroHash;
   const sigBytes = signature.startsWith('0x') ? signature : '0x' + signature;
 
-  if (contractAvailable) {
+  const status = await checkBlockchainStatus();
+
+  if (status.connected && status.contractFound) {
     try {
       const tx = await contract.anchorClaim(claimIdBytes32, dataHashBytes32, parentHashBytes32, sigBytes);
       const receipt = await tx.wait();
@@ -86,7 +115,7 @@ async function anchorClaim(claimId, dataHash, parentHash, signature) {
         mode: "on-chain"
       };
     } catch (err) {
-      console.error(`On-chain anchoring failed for claim ${claimId}:`, err.message);
+      console.error(`[BLOCKCHAIN ERROR] On-chain anchoring failed for claim ${claimId}:`, err);
       // Fallback to mock on error
     }
   }
@@ -109,8 +138,9 @@ async function anchorClaim(claimId, dataHash, parentHash, signature) {
  */
 async function getAnchor(claimId) {
   const claimIdBytes32 = ethers.id(claimId);
+  const status = await checkBlockchainStatus();
 
-  if (contractAvailable) {
+  if (status.connected && status.contractFound) {
     try {
       const result = await contract.getAnchor(claimIdBytes32);
       return {
@@ -123,7 +153,7 @@ async function getAnchor(claimId) {
         mode: "on-chain"
       };
     } catch (err) {
-      console.warn(`Failed to fetch anchor from contract for ${claimId}: ${err.message}. Using mock fallback.`);
+      console.warn(`[BLOCKCHAIN WARNING] Failed to fetch anchor from contract for ${claimId}:`, err);
     }
   }
 
@@ -151,7 +181,7 @@ async function getAnchor(claimId) {
 
   return {
     dataHash: claim.hash,
-    owner: wallet ? wallet.address : "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // Fixed mock owner address
+    owner: wallet ? wallet.address : "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     orgAddress: recoveredOrgAddress,
     timestamp: claim.timestamp,
     parentHash: parentHash,
@@ -198,5 +228,6 @@ module.exports = {
   anchorClaim,
   getAnchor,
   getOrgName,
+  checkBlockchainStatus,
   isMock: () => !contractAvailable
 };

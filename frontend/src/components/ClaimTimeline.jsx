@@ -87,7 +87,7 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
         </h2>
         {auditReport && (
           <div className="mt-2.5">
-            <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} />
+            <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} liveVerification={auditReport.liveVerification} />
           </div>
         )}
         <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
@@ -156,7 +156,7 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                             Version {version.version}
                           </span>
                           <span className="font-mono text-2xs text-slate-500">{version.claimId}</span>
-                          <MockWarningBadge anchored={fullRecord.anchored} mode={fullRecord.blockchainMode} />
+                          <MockWarningBadge anchored={fullRecord.anchored} mode={fullRecord.blockchainMode} liveVerification={version.liveVerification} />
                         </div>
                         {version.notes && (
                           <p className="text-xs text-slate-300 font-medium italic mt-2">
@@ -196,10 +196,14 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                           {version.blockchainMode === 'on-chain' ? 'On-Chain Anchor:' : 'Simulated Anchor:'}
                         </span>
                         <span className={`flex items-center gap-1 select-all ${
-                          version.anchorVerified ? 'text-emerald-400' : 'text-red-400 font-bold animate-pulse'
+                          version.anchorVerified || version.liveVerification === 'unavailable' ? 'text-emerald-400' : 'text-red-400 font-bold animate-pulse'
                         }`}>
                           {version.anchoredHash 
-                            ? `${version.anchoredHash.substring(0, 12)}... ${version.blockchainMode === 'on-chain' ? '[Verified]' : '[Matches (Mock)]'}`
+                            ? `${version.anchoredHash.substring(0, 12)}... ${
+                                version.blockchainMode === 'on-chain' 
+                                  ? (version.liveVerification === 'unavailable' ? '[Offline (Cached)]' : '[Verified]') 
+                                  : '[Matches (Mock)]'
+                              }`
                             : 'Unanchored/Mismatch'
                           }
                         </span>

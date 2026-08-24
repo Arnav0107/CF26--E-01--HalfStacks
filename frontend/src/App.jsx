@@ -16,6 +16,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [blockchainConnected, setBlockchainConnected] = useState(false);
+  const [contractFound, setContractFound] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -36,11 +37,14 @@ export default function App() {
       const disputesData = await disputesRes.json();
       
       let isConnected = false;
+      let isContractFound = false;
       if (statusRes && statusRes.ok) {
         const statusData = await statusRes.json();
         isConnected = !!statusData.blockchainConnected;
+        isContractFound = !!statusData.contractFound;
       }
       setBlockchainConnected(isConnected);
+      setContractFound(isContractFound);
 
       setClaims(claimsData);
       setDisputes(disputesData);
@@ -87,9 +91,17 @@ export default function App() {
         {/* Network status and refresh */}
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-xs">
-            <span className={`h-2.5 w-2.5 rounded-full ${blockchainConnected ? 'bg-emerald-500 animate-ping' : 'bg-amber-500 animate-pulse'}`}></span>
+            <span className={`h-2.5 w-2.5 rounded-full ${
+              blockchainConnected && contractFound 
+                ? 'bg-emerald-500 animate-ping' 
+                : (blockchainConnected ? 'bg-indigo-500 animate-pulse' : 'bg-amber-500 animate-pulse')
+            }`}></span>
             <span className="text-slate-300 font-medium font-mono">
-              Local Node: {blockchainConnected ? 'Connected' : 'Disconnected (Mock Mode)'}
+              Local Node: {
+                blockchainConnected && contractFound 
+                  ? 'Connected' 
+                  : (blockchainConnected ? 'Connected (Contract Missing)' : 'Disconnected (Mock Mode)')
+              }
             </span>
           </div>
 

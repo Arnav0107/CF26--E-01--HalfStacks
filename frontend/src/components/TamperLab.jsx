@@ -187,7 +187,7 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
                         </>
                       )}
                     </div>
-                    <MockWarningBadge anchored={verifyReport.anchored} mode={verifyReport.blockchainMode} />
+                    <MockWarningBadge anchored={verifyReport.anchored} mode={verifyReport.blockchainMode} liveVerification={verifyReport.liveVerification} />
                   </div>
 
                   <div className="p-4 space-y-4">

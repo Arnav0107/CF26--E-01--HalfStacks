@@ -258,30 +258,46 @@ router.get('/claims/:id/verify', async (req, res) => {
       errors.push("Cryptographic signature invalid for local data!");
     }
 
+    // Fetch blockchain status
+    const chainStatus = await blockchain.checkBlockchainStatus();
+    const isLiveChainActive = chainStatus.connected && chainStatus.contractFound;
+
     // Fetch blockchain anchor
     let anchoredHash = null;
     let anchoredOrg = null;
     let anchorVerified = false;
     let anchorDetails = null;
+    let liveVerification = "unavailable"; // "verified" | "failed" | "unavailable"
 
-    try {
-      anchorDetails = await blockchain.getAnchor(claimId);
-      anchoredHash = anchorDetails.dataHash;
-      anchoredOrg = anchorDetails.orgAddress;
-      
-      const hashMatch = (anchoredHash.toLowerCase() === recomputedHash.toLowerCase());
-      const orgMatch = (anchoredOrg.toLowerCase() === claim.orgId.toLowerCase());
-      
-      anchorVerified = hashMatch && orgMatch;
-      
-      if (!hashMatch) {
-        errors.push(`On-chain anchor hash mismatch! Anchored: ${anchoredHash}, Recomputed: ${recomputedHash}`);
+    if (isLiveChainActive) {
+      try {
+        anchorDetails = await blockchain.getAnchor(claimId);
+        anchoredHash = anchorDetails.dataHash;
+        anchoredOrg = anchorDetails.orgAddress;
+        
+        const hashMatch = (anchoredHash.toLowerCase() === recomputedHash.toLowerCase());
+        const orgMatch = (anchoredOrg.toLowerCase() === claim.orgId.toLowerCase());
+        
+        anchorVerified = hashMatch && orgMatch;
+        
+        if (anchorVerified) {
+          liveVerification = "verified";
+        } else {
+          liveVerification = "failed";
+          if (!hashMatch) {
+            errors.push(`On-chain anchor hash mismatch! Anchored: ${anchoredHash}, Recomputed: ${recomputedHash}`);
+          }
+          if (!orgMatch) {
+            errors.push(`On-chain anchor org mismatch! Anchored org: ${anchoredOrg}, Claim org: ${claim.orgId}`);
+          }
+        }
+      } catch (err) {
+        liveVerification = "failed";
+        errors.push(`Blockchain anchor retrieval failed: ${err.message}`);
       }
-      if (!orgMatch) {
-        errors.push(`On-chain anchor org mismatch! Anchored org: ${anchoredOrg}, Claim org: ${claim.orgId}`);
-      }
-    } catch (err) {
-      errors.push(`Blockchain anchor retrieval failed: ${err.message}`);
+    } else {
+      liveVerification = "unavailable";
+      anchorVerified = false;
     }
 
     chainDetails.push({
@@ -293,8 +309,9 @@ router.get('/claims/:id/verify', async (req, res) => {
       signatureVerified: sigVerified,
       anchorVerified,
       tonnage: claim.tonnage,
-      anchored: anchorDetails ? anchorDetails.anchored : false,
-      blockchainMode: anchorDetails ? anchorDetails.mode : "mock"
+      anchored: claim.anchored || false, // Persisted write-time flag (Fix Step 3)
+      blockchainMode: claim.blockchainMode || "mock", // Persisted write-time flag (Fix Step 3)
+      liveVerification
     });
 
     // 3. Walk parent chain
@@ -320,13 +337,20 @@ router.get('/claims/:id/verify', async (req, res) => {
       let pAnchoredHash = null;
       let pAnchorVerified = false;
       let pAnchor = null;
-      try {
-        pAnchor = await blockchain.getAnchor(parent.claimId);
-        pAnchoredHash = pAnchor.dataHash;
-        pAnchorVerified = (pAnchoredHash.toLowerCase() === pRecomputedHash.toLowerCase()) && 
-                          (pAnchor.orgAddress.toLowerCase() === parent.orgId.toLowerCase());
-      } catch (e) {
-        // Warning
+      let pLiveVerification = "unavailable";
+
+      if (isLiveChainActive) {
+        try {
+          pAnchor = await blockchain.getAnchor(parent.claimId);
+          pAnchoredHash = pAnchor.dataHash;
+          pAnchorVerified = (pAnchoredHash.toLowerCase() === pRecomputedHash.toLowerCase()) && 
+                            (pAnchor.orgAddress.toLowerCase() === parent.orgId.toLowerCase());
+          pLiveVerification = pAnchorVerified ? "verified" : "failed";
+        } catch (e) {
+          pLiveVerification = "failed";
+        }
+      } else {
+        pLiveVerification = "unavailable";
       }
 
       chainDetails.push({
@@ -338,11 +362,14 @@ router.get('/claims/:id/verify', async (req, res) => {
         signatureVerified: pSigVerified,
         anchorVerified: pAnchorVerified,
         tonnage: parent.tonnage,
-        anchored: pAnchor ? pAnchor.anchored : false,
-        blockchainMode: pAnchor ? pAnchor.mode : "mock"
+        anchored: parent.anchored || false, // Persisted write-time flag (Fix Step 3)
+        blockchainMode: parent.blockchainMode || "mock", // Persisted write-time flag (Fix Step 3)
+        liveVerification: pLiveVerification
       });
 
-      if (!pDbHashMatches || !pSigVerified || !pAnchorVerified) {
+      // Chain integrity: we check db hash match and signature, and only complain about anchor if chain is active and it failed
+      const anchorCheckOk = isLiveChainActive ? pAnchorVerified : true;
+      if (!pDbHashMatches || !pSigVerified || !anchorCheckOk) {
         chainVerified = false;
         errors.push(`History chain verification failed at Version ${parent.version} (Claim: ${parent.claimId})`);
       }
@@ -361,8 +388,9 @@ router.get('/claims/:id/verify', async (req, res) => {
       anchorVerified,
       chainVerified,
       anchorIdentitySource: "on-chain-ecrecover",
-      anchored: anchorDetails ? anchorDetails.anchored : false,
-      blockchainMode: anchorDetails ? anchorDetails.mode : "mock",
+      anchored: claim.anchored || false, // Persisted write-time flag (Fix Step 3)
+      blockchainMode: claim.blockchainMode || "mock", // Persisted write-time flag (Fix Step 3)
+      liveVerification, // "verified" | "failed" | "unavailable" (Fix Step 3)
       errors,
       chain: chainDetails.reverse() // Sort chronologically: oldest first
     });
@@ -467,10 +495,11 @@ router.post('/clear', async (req, res) => {
  */
 router.get('/status', async (req, res) => {
   try {
-    const isMock = blockchain.isMock();
+    const status = await blockchain.checkBlockchainStatus();
     res.json({
       status: "online",
-      blockchainConnected: !isMock
+      blockchainConnected: status.connected,
+      contractFound: status.contractFound
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

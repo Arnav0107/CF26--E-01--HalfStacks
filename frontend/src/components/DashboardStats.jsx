@@ -22,8 +22,8 @@ export default function DashboardStats({ claims, disputes }) {
       value: totalClaims,
       subtext: `${activeClaims} active versions`,
       icon: Database,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10'
+      color: 'text-maroon',
+      bgColor: 'bg-maroon/10'
     },
     {
       name: 'Environmental Domains',
@@ -38,16 +38,16 @@ export default function DashboardStats({ claims, disputes }) {
       value: `${inconsistenciesCount} Var / ${anomaliesCount} Anom`,
       subtext: inconsistenciesCount > 0 ? 'AI detected claim variances' : 'All evidence consistent',
       icon: ShieldAlert,
-      color: (inconsistenciesCount > 0 || anomaliesCount > 0) ? 'text-amber-400' : 'text-slate-400',
-      bgColor: (inconsistenciesCount > 0 || anomaliesCount > 0) ? 'bg-amber-500/10' : 'bg-slate-500/10'
+      color: (inconsistenciesCount > 0 || anomaliesCount > 0) ? 'text-amber-500' : 'text-slate-500',
+      bgColor: (inconsistenciesCount > 0 || anomaliesCount > 0) ? 'bg-amber-50' : 'bg-slate-105'
     },
     {
       name: 'Active Disputes',
       value: activeDisputes,
       subtext: activeDisputes > 0 ? 'Requires authority resolution' : 'No conflicting claims',
       icon: Award,
-      color: activeDisputes > 0 ? 'text-rose-500 animate-pulse' : 'text-purple-500',
-      bgColor: activeDisputes > 0 ? 'bg-rose-500/10' : 'bg-purple-500/10'
+      color: activeDisputes > 0 ? 'text-rose-600 animate-pulse' : 'text-purple-600',
+      bgColor: activeDisputes > 0 ? 'bg-rose-50' : 'bg-purple-50'
     }
   ];
 
@@ -55,11 +55,11 @@ export default function DashboardStats({ claims, disputes }) {
     <div className="space-y-4 mb-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="glass rounded-xl p-5 border border-white/5 shadow-lg flex items-center justify-between">
+          <div key={i} className="glass bg-white rounded-xl p-5 border border-slate-200 shadow flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-400">{stat.name}</p>
-              <h3 className="text-xl font-bold text-white mt-1">{stat.value}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{stat.subtext}</p>
+              <p className="text-sm font-semibold text-slate-700">{stat.name}</p>
+              <h3 className="text-2xl font-black text-navy mt-1">{stat.value}</h3>
+              <p className="text-xs font-medium text-slate-600 mt-0.5">{stat.subtext}</p>
             </div>
             <div className={`${stat.bgColor} p-3 rounded-lg`}>
               <stat.icon className={`h-6 w-6 ${stat.color}`} />
@@ -69,14 +69,14 @@ export default function DashboardStats({ claims, disputes }) {
       </div>
 
       {/* Domain Quick Filters Banner */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 glass rounded-lg border border-white/5 text-xs text-slate-300">
-        <span className="font-semibold text-slate-400 uppercase tracking-wider mr-2">Tracked Domains:</span>
-        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-medium">🌱 Carbon ({domainCounts['carbon'] || 0})</span>
-        <span className="px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 font-medium">💧 Water ({domainCounts['water'] || 0})</span>
-        <span className="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 font-medium">💨 Air Quality ({domainCounts['air'] || 0})</span>
-        <span className="px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-400 font-medium">♻️ Waste ({domainCounts['waste'] || 0})</span>
-        <span className="px-2.5 py-1 rounded-full bg-green-500/15 text-green-400 font-medium">🌲 Forest ({domainCounts['forest'] || 0})</span>
-        <span className="px-2.5 py-1 rounded-full bg-yellow-500/15 text-yellow-400 font-medium">⚡ Energy ({domainCounts['energy'] || 0})</span>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 glass rounded-lg border border-slate-200 text-xs text-navy bg-white shadow-sm">
+        <span className="font-bold text-navy uppercase tracking-wider mr-2">Tracked Domains:</span>
+        <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">🌱 Carbon ({domainCounts['carbon'] || 0})</span>
+        <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 font-semibold border border-blue-200">💧 Water ({domainCounts['water'] || 0})</span>
+        <span className="px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-800 font-semibold border border-cyan-200">💨 Air Quality ({domainCounts['air'] || 0})</span>
+        <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 font-semibold border border-amber-200">♻️ Waste ({domainCounts['waste'] || 0})</span>
+        <span className="px-2.5 py-1 rounded-full bg-green-50 text-green-800 font-semibold border border-green-200">🌲 Forest ({domainCounts['forest'] || 0})</span>
+        <span className="px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-800 font-semibold border border-yellow-200">⚡ Energy ({domainCounts['energy'] || 0})</span>
       </div>
     </div>
   );

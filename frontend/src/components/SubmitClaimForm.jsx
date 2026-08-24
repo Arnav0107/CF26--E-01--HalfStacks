@@ -182,10 +182,10 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
   };
 
   return (
-    <div className="glass rounded-xl border border-white/5 shadow-xl p-6 flex flex-col h-full justify-between">
+    <div className="glass rounded-xl border border-slate-200 shadow-xl p-6 flex flex-col h-full justify-between">
       <div>
-        <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-4 mb-4">
+          <h2 className="text-lg font-bold text-navy flex items-center gap-2">
             <FilePlus className="h-5 w-5 text-brand-500" />
             Register Environmental Claim
           </h2>
@@ -193,39 +193,39 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           <button
             type="button"
             onClick={() => setShowExtractorModal(true)}
-            className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg bg-[#FDF2F4] hover:bg-[#FCE7EB] text-maroon text-xs font-semibold border border-maroon/20 transition flex items-center gap-1.5"
           >
             <span>🤖 Extract from PDF/Report</span>
           </button>
         </div>
 
         {error && (
-          <div className="p-3 mb-4 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Ingestion Source Switcher */}
-        <div className="mb-4 bg-slate-900/60 p-1.5 rounded-xl border border-white/5 flex gap-1">
+        <div className="mb-4 bg-[#FAF9F7] p-1.5 rounded-xl border border-slate-200 flex gap-1">
           <button
             type="button"
             onClick={() => setSourceType('MANUAL_UPLOAD')}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'MANUAL_UPLOAD' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'MANUAL_UPLOAD' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm' : 'text-slate-500 hover:text-navy'}`}
           >
             📁 Manual Upload
           </button>
           <button
             type="button"
             onClick={() => setSourceType('IOT_SENSOR')}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'IOT_SENSOR' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'IOT_SENSOR' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm' : 'text-slate-500 hover:text-navy'}`}
           >
             ⚡ IoT Smart Meter
           </button>
           <button
             type="button"
             onClick={() => setSourceType('SATELLITE_ORACLE')}
-            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'SATELLITE_ORACLE' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow' : 'text-slate-400 hover:text-slate-200'}`}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition ${sourceType === 'SATELLITE_ORACLE' ? 'bg-purple-50 text-purple-700 border border-purple-200 shadow-sm' : 'text-slate-500 hover:text-navy'}`}
           >
             🛰️ Sentinel Satellite
           </button>
@@ -233,15 +233,15 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Domain & Metric Selection */}
-          <div className="grid grid-cols-2 gap-4 bg-dark-900/40 p-3 rounded-xl border border-white/5">
+          <div className="grid grid-cols-2 gap-4 bg-[#FAF9F7] p-3 rounded-xl border border-slate-200">
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Environmental Domain
               </label>
               <select
                 value={environmentalDomain}
                 onChange={(e) => setEnvironmentalDomain(e.target.value)}
-                className="w-full bg-dark-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-emerald-400 font-bold focus:outline-none focus:border-brand-500 cursor-pointer capitalize"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-emerald-700 font-bold focus:outline-none focus:border-brand-500 cursor-pointer capitalize"
               >
                 <option value="carbon">🌱 Carbon / GHG Emissions</option>
                 <option value="water">💧 Water Consumption & Pollution</option>
@@ -253,7 +253,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
             </div>
 
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Metric & Unit
               </label>
               <select
@@ -263,7 +263,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                   const selectedPair = (domainMetrics[environmentalDomain] || []).find(m => m.metric === e.target.value);
                   if (selectedPair) setUnit(selectedPair.unit);
                 }}
-                className="w-full bg-dark-900 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 cursor-pointer"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy focus:outline-none focus:border-brand-500 cursor-pointer"
               >
                 {(domainMetrics[environmentalDomain] || domainMetrics['carbon']).map(m => (
                   <option key={m.metric} value={m.metric}>
@@ -277,7 +277,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           {/* Value, Unit, Period */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Value
               </label>
               <input
@@ -285,31 +285,31 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 value={tonnage}
                 onChange={(e) => setTonnage(e.target.value)}
                 placeholder="e.g. 4000"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-brand-500"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy placeholder-slate-400 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Unit
               </label>
               <input
                 type="text"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-brand-500"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 font-mono focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Period
               </label>
               <input
                 type="text"
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -318,7 +318,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           {/* Project Details */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Project Name
               </label>
               <input
@@ -326,12 +326,12 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 value={projectName}
                 onChange={(e) => setProjectName(e.target.value)}
                 placeholder="e.g. Amazon Water Sequestration"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy placeholder-slate-400 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+              <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Region / Country
               </label>
               <input
@@ -339,7 +339,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
                 placeholder="e.g. Rwanda"
-                className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy placeholder-slate-400 focus:outline-none focus:border-brand-500"
                 required
               />
             </div>
@@ -347,13 +347,13 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
 
           {/* Org keys mapping selector */}
           <div>
-            <label className="block text-2xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="block text-2xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Submit As (Authorized Organization)
             </label>
             <select
               value={demoOrgId}
               onChange={(e) => setDemoOrgId(e.target.value)}
-              className="w-full bg-dark-900/50 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500"
+              className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-navy focus:outline-none focus:border-brand-500"
             >
               {orgs.map(org => (
                 <option key={org.id} value={org.id}>
@@ -366,7 +366,7 @@ export default function SubmitClaimForm({ claims, onSuccessSubmit, API_URL }) {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-50 text-white rounded-lg py-2.5 font-bold transition-all text-xs flex items-center justify-center gap-1.5"
+            className="w-full bg-maroon hover:bg-maroon-dark disabled:opacity-50 text-white rounded-lg py-2.5 font-bold transition-all text-xs flex items-center justify-center gap-1.5"
           >
             {submitting ? (
               <>

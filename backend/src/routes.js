@@ -97,8 +97,8 @@ router.post('/claims', async (req, res) => {
       });
     }
 
-    // 5. Anchor on blockchain
-    const txHash = await blockchain.anchorClaim(claimId, hash, signature);
+    // 5. Anchor on blockchain (returns { txHash, anchored, mode })
+    const anchorResult = await blockchain.anchorClaim(claimId, hash, null, signature);
 
     // Save claim
     const savedClaim = await db.saveClaim({
@@ -114,7 +114,9 @@ router.post('/claims', async (req, res) => {
       parentHash: null,
       version: 1,
       status: 'active',
-      txHash,
+      txHash: anchorResult.txHash,
+      anchored: anchorResult.anchored,
+      blockchainMode: anchorResult.mode,
       timestamp: Date.now()
     });
 
@@ -187,7 +189,7 @@ router.post('/claims/:id/correct', async (req, res) => {
     }
 
     // 4. Anchor on blockchain
-    const txHash = await blockchain.anchorClaim(claimId, hash, signature);
+    const anchorResult = await blockchain.anchorClaim(claimId, hash, parentClaim.hash, signature);
 
     // 5. Mark parent claim as superseded
     await db.updateClaimStatus(parentId, 'superseded');
@@ -206,7 +208,9 @@ router.post('/claims/:id/correct', async (req, res) => {
       parentHash: parentClaim.hash,
       version: parentClaim.version + 1,
       status: 'active',
-      txHash,
+      txHash: anchorResult.txHash,
+      anchored: anchorResult.anchored,
+      blockchainMode: anchorResult.mode,
       timestamp: Date.now(),
       notes: notes || ''
     });
@@ -352,6 +356,8 @@ router.get('/claims/:id/verify', async (req, res) => {
       anchorVerified,
       chainVerified,
       anchorIdentitySource: "on-chain-ecrecover",
+      anchored: anchorDetails ? anchorDetails.anchored : false,
+      blockchainMode: anchorDetails ? anchorDetails.mode : "mock",
       errors,
       chain: chainDetails.reverse() // Sort chronologically: oldest first
     });
@@ -374,7 +380,14 @@ router.get('/claims', async (req, res) => {
     const claims = await db.findClaims(filter);
     // Sort by timestamp dec
     claims.sort((a, b) => b.timestamp - a.timestamp);
-    res.json(claims);
+    
+    // Dynamic read-only non-blocking lookup of org names from OrgRegistry
+    const enrichedClaims = await Promise.all(claims.map(async c => {
+      const orgName = await blockchain.getOrgName(c.orgId);
+      return { ...c, orgName };
+    }));
+    
+    res.json(enrichedClaims);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -403,7 +416,9 @@ router.get('/claims/:id', async (req, res) => {
     if (!claim) {
       return res.status(404).json({ error: "Claim not found" });
     }
-    res.json(claim);
+    
+    const orgName = await blockchain.getOrgName(claim.orgId);
+    res.json({ ...claim, orgName });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

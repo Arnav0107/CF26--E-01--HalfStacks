@@ -2,14 +2,14 @@
 
 GreenProof is a decentralized environmental data provenance prototype that implements a cryptographically auditable registry of carbon project claims, corrections, and disputes. 
 
-## Technical Defense: On-Chain Trust Model Upgrade
+## Technical Defense: On-Chain Trust Model & Identity Delegation
 
-The E-01 provenance network utilizes an **on-chain verified trust model** to enforce organizational identity at the smart contract level, satisfying E-01's key requirements of *verifiable organizational identities* and *independent verification*.
+The E-01 provenance network establishes a **consistent, cryptographically-provable pseudonymous identity (address-bound via ecrecover)**. An `OrgRegistry` smart contract is mapped as the stated extension point for real-world attestation and KYC verification, where full KYC implementation details remain out of scope for this 48-hour prototype.
 
 ### How It Works
 1. **Cryptographic Bindings**: Instead of accepting a trusted, unverified `orgAddress` parameter as an assertion of identity, the smart contract's anchoring function relies on cryptographic proof:
    ```solidity
-   function anchorClaim(bytes32 claimId, bytes32 dataHash, bytes calldata signature) external
+   function anchorClaim(bytes32 claimId, bytes32 dataHash, bytes32 parentHash, bytes calldata signature) external
    ```
 2. **On-Chain Recovery**: Inside `DataProvenance.sol`, the contract reconstructs the standard Ethereum Signed Message hash from the canonical content `dataHash`:
    ```solidity
@@ -20,7 +20,8 @@ The E-01 provenance network utilizes an **on-chain verified trust model** to enf
    address recoveredAddress = ecrecover(messageHash, v, r, s);
    require(recoveredAddress != address(0), "Invalid signature");
    ```
-4. **Derived Identity**: The contract records `recoveredAddress` as the absolute, cryptographically-proven `orgAddress` for that claim anchor. This removes the backend server as a trusted gatekeeper for identity validation. Downstream verifiers can audit the blockchain anchor independently to confirm which organization signed the data without trusting any central database or API.
+4. **Derived Identity**: The contract records `recoveredAddress` as the absolute, cryptographically-proven `orgAddress` for that claim anchor. This removes the backend server as a trusted gatekeeper for identity validation.
+5. **Real-World Attestation mapping**: The optional `OrgRegistry.sol` contract enables mapping organization addresses to real-world certified names (restricted to owner attestations). Downstream consumers can resolve these names to display verified registry details.
 
 ---
 

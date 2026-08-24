@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, ShieldCheck, HelpCircle, FileText, ChevronRight } from 'lucide-react';
+import MockWarningBadge from './MockWarningBadge';
 
 export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -144,7 +145,10 @@ export default function ClaimsDirectory({ claims, onSelectClaim, selectedClaimId
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        {getStatusBadge(claim.status)}
+                        <div className="flex flex-col gap-1 items-start">
+                          {getStatusBadge(claim.status)}
+                          <MockWarningBadge anchored={claim.anchored} mode={claim.blockchainMode} />
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <ChevronRight className={`h-5 w-5 text-slate-400 transition-transform ${isSelected ? 'transform translate-x-1 text-brand-500' : ''}`} />

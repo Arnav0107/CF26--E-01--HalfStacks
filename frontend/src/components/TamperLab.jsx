@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Trash2, CheckCircle2, RotateCcw, Play, AlertOctagon, HelpCircle, HardDrive, RefreshCw } from 'lucide-react';
+import MockWarningBadge from './MockWarningBadge';
 
 export default function TamperLab({ claims, onRefreshData, API_URL }) {
   const [selectedClaimId, setSelectedClaimId] = useState('');
@@ -168,22 +169,25 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
                     : 'border-red-500/25 bg-red-500/5 animate-pulse-slow'
                 }`}>
                   {/* Alert Header */}
-                  <div className={`px-4 py-3 flex items-center gap-2 border-b text-sm font-bold ${
+                  <div className={`px-4 py-3 flex items-center justify-between gap-2 border-b text-sm font-bold ${
                     verifyReport.isValid 
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
                       : 'bg-red-500/10 border-red-500/20 text-red-400'
                   }`}>
-                    {verifyReport.isValid ? (
-                      <>
-                        <CheckCircle2 className="h-4.5 w-4.5" />
-                        AUDIT PASS: Claims Integrity Verified
-                      </>
-                    ) : (
-                      <>
-                        <AlertOctagon className="h-4.5 w-4.5" />
-                        AUDIT FAIL: Cryptographic Tampering Detected!
-                      </>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {verifyReport.isValid ? (
+                        <>
+                          <CheckCircle2 className="h-4.5 w-4.5" />
+                          AUDIT PASS: Claims Integrity Verified
+                        </>
+                      ) : (
+                        <>
+                          <AlertOctagon className="h-4.5 w-4.5" />
+                          AUDIT FAIL: Cryptographic Tampering Detected!
+                        </>
+                      )}
+                    </div>
+                    <MockWarningBadge anchored={verifyReport.anchored} mode={verifyReport.blockchainMode} />
                   </div>
 
                   <div className="p-4 space-y-4">

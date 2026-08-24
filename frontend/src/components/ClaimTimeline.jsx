@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GitBranch, Clock, Key, ShieldAlert, FileSignature, CheckCircle2 } from 'lucide-react';
+import MockWarningBadge from './MockWarningBadge';
 
 export default function ClaimTimeline({ claimId, claims, API_URL }) {
   const [timeline, setTimeline] = useState([]);
@@ -92,17 +93,20 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
           </div>
 
           {auditReport && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">Audit Status:</span>
-              {auditReport.isValid ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                  <CheckCircle2 className="h-3 w-3" /> Integrity Pass
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse">
-                  <ShieldAlert className="h-3 w-3" /> Verification Fail
-                </span>
-              )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400">Audit Status:</span>
+                {auditReport.isValid ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                    <CheckCircle2 className="h-3 w-3" /> Integrity Pass
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse">
+                    <ShieldAlert className="h-3 w-3" /> Verification Fail
+                  </span>
+                )}
+              </div>
+              <MockWarningBadge anchored={auditReport.anchored} mode={auditReport.blockchainMode} />
             </div>
           )}
         </div>
@@ -143,13 +147,14 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                     {/* Header */}
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
                             isLatest ? 'bg-brand-500/10 text-brand-400' : 'bg-slate-800 text-slate-400'
                           }`}>
                             Version {version.version}
                           </span>
                           <span className="font-mono text-2xs text-slate-500">{version.claimId}</span>
+                          <MockWarningBadge anchored={fullRecord.anchored} mode={fullRecord.blockchainMode} />
                         </div>
                         {version.notes && (
                           <p className="text-xs text-slate-300 font-medium italic mt-2">
@@ -171,9 +176,9 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                     <div className="mt-4 pt-3 border-t border-white/5 space-y-1.5 text-3xs font-mono text-slate-400">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Submitting Org:</span>
-                        <span className="text-slate-300 flex items-center gap-1 select-all">
+                        <span className="text-slate-300 flex items-center gap-1 select-all" title={fullRecord.orgId}>
                           <Key className="h-2.5 w-2.5" />
-                          {fullRecord.orgId.substring(0, 10)}...{fullRecord.orgId.substring(fullRecord.orgId.length - 8)}
+                          {fullRecord.orgName || `${fullRecord.orgId.substring(0, 10)}...`}
                         </span>
                       </div>
                       <div className="flex justify-between">

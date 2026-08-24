@@ -18,6 +18,7 @@ contract DataProvenanceTest is Test {
     bytes32 public claimId1 = keccak256("claim-001");
     bytes32 public claimId2 = keccak256("claim-002");
     bytes32 public dataHash1 = sha256("original-payload-data");
+    bytes32 public dataHash2 = sha256("corrected-payload-data");
     bytes32 public tamperedHash1 = sha256("tampered-payload-data");
 
     function setUp() public {
@@ -36,35 +37,34 @@ contract DataProvenanceTest is Test {
     }
 
     /**
-     * @notice Test 1: Verify correct anchoring of claims and ecrecover signer mapping.
+     * @notice Test 1: Verify correct anchoring of claims and ecrecover signer mapping with parentHash.
      */
     function testAnchorWithValidSignature_RecoversCorrectOrgAddress() public {
         bytes memory sig = generateSig(orgPrivateKey, dataHash1);
 
-        dataProvenance.anchorClaim(claimId1, dataHash1, sig);
+        // Genesis claim uses bytes32(0) as parentHash
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), sig);
 
         // Verify the stored state
-        (bytes32 storedHash, address owner, address storedOrgAddress, uint256 timestamp) = dataProvenance.getAnchor(claimId1);
+        (bytes32 storedHash, address owner, address storedOrgAddress, uint256 timestamp, bytes32 parentHash) = dataProvenance.getAnchor(claimId1);
         
         assertEq(storedHash, dataHash1);
         assertEq(owner, address(this));
         assertEq(storedOrgAddress, orgAddress);
         assertTrue(timestamp > 0);
+        assertEq(parentHash, bytes32(0));
     }
 
     /**
-     * @notice Test 2: Verify signature from wrong key records the actual signer, not spoofed one.
+     * @notice Test 2: Verify signature from wrong key records the actual signer.
      */
     function testAnchorWithSignatureFromWrongKey_StoresWrongSigner() public {
-        // Sign with wrongPrivateKey
         bytes memory sig = generateSig(wrongPrivateKey, dataHash1);
 
-        dataProvenance.anchorClaim(claimId1, dataHash1, sig);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), sig);
 
-        (, , address storedOrgAddress, ) = dataProvenance.getAnchor(claimId1);
+        (, , address storedOrgAddress, , ) = dataProvenance.getAnchor(claimId1);
 
-        // It should record the wrongOrgAddress because that is who signed it.
-        // There is no address parameter to spoof.
         assertEq(storedOrgAddress, wrongOrgAddress);
         assertTrue(storedOrgAddress != orgAddress);
     }
@@ -74,43 +74,60 @@ contract DataProvenanceTest is Test {
      */
     function testDuplicateClaimIdReverts() public {
         bytes memory sig = generateSig(orgPrivateKey, dataHash1);
-        dataProvenance.anchorClaim(claimId1, dataHash1, sig);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), sig);
 
         // Attempting to anchor the same claim ID again should fail
         vm.expectRevert("Claim ID already anchored");
-        dataProvenance.anchorClaim(claimId1, dataHash1, sig);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), sig);
     }
 
     /**
      * @notice Test 4: Verify invalid signature length reverts.
      */
     function testInvalidSignatureLengthReverts() public {
-        bytes memory shortSig = new bytes(64); // Invalid length (64 instead of 65)
+        bytes memory shortSig = new bytes(64);
         
         vm.expectRevert("Invalid signature length");
-        dataProvenance.anchorClaim(claimId1, dataHash1, shortSig);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), shortSig);
 
-        bytes memory longSig = new bytes(66); // Invalid length (66 instead of 65)
+        bytes memory longSig = new bytes(66);
         
         vm.expectRevert("Invalid signature length");
-        dataProvenance.anchorClaim(claimId1, dataHash1, longSig);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), longSig);
     }
 
     /**
      * @notice Test 5: Verify signature check fails if dataHash is tampered after signing.
      */
     function testTamperedDataHashFailsSignatureCheck() public {
-        // Sign dataHash1
         bytes memory sig = generateSig(orgPrivateKey, dataHash1);
 
-        // Anchor with tamperedHash1 but using the signature generated for dataHash1.
-        // ecrecover will reconstruct hash using tamperedHash1 and recover a garbage address.
-        dataProvenance.anchorClaim(claimId1, tamperedHash1, sig);
+        dataProvenance.anchorClaim(claimId1, tamperedHash1, bytes32(0), sig);
 
-        (, , address storedOrgAddress, ) = dataProvenance.getAnchor(claimId1);
+        (, , address storedOrgAddress, , ) = dataProvenance.getAnchor(claimId1);
 
-        // Stored orgAddress will be some random recovered address, NOT the orgAddress.
-        // Downstream consumers comparing storedOrgAddress to claim.orgId will flag the mismatch.
         assertTrue(storedOrgAddress != orgAddress);
+    }
+
+    /**
+     * @notice Test 6: Verify correction claim anchoring stores and links parentHash correctly.
+     */
+    function testCorrectionClaimLinksParentHash() public {
+        // 1. Genesis Claim
+        bytes memory sig1 = generateSig(orgPrivateKey, dataHash1);
+        dataProvenance.anchorClaim(claimId1, dataHash1, bytes32(0), sig1);
+        
+        // Retrieve hash to act as parentHash
+        (bytes32 parentDigest, , , , ) = dataProvenance.getAnchor(claimId1);
+        
+        // 2. Correction Claim
+        bytes memory sig2 = generateSig(orgPrivateKey, dataHash2);
+        dataProvenance.anchorClaim(claimId2, dataHash2, parentDigest, sig2);
+        
+        // Retrieve and assert parentHash linkage
+        (bytes32 storedHash, , address storedOrgAddress, , bytes32 parentHash) = dataProvenance.getAnchor(claimId2);
+        assertEq(storedHash, dataHash2);
+        assertEq(storedOrgAddress, orgAddress);
+        assertEq(parentHash, parentDigest);
     }
 }

@@ -7,6 +7,7 @@ contract DataProvenance {
         address owner;        // The address that submitted the blockchain transaction (msg.sender)
         address orgAddress;   // The address of the organization, derived on-chain via signature verification
         uint256 timestamp;
+        bytes32 parentHash;   // Hash of the parent version (or bytes32(0) if genesis)
     }
 
     // Maps claimId (hash) -> Anchor metadata
@@ -17,16 +18,18 @@ contract DataProvenance {
         bytes32 indexed dataHash,
         address indexed orgAddress,
         address owner,
-        uint256 timestamp
+        uint256 timestamp,
+        bytes32 parentHash
     );
 
     /**
      * @notice Anchor a new environmental data claim.
      * @param claimId Unique identifier representing the claim.
      * @param dataHash SHA-256 content hash of the canonical claim payload.
+     * @param parentHash Hash of the parent version (or bytes32(0) if genesis).
      * @param signature The 65-byte ECDSA signature over the dataHash signed by the organization.
      */
-    function anchorClaim(bytes32 claimId, bytes32 dataHash, bytes calldata signature) external {
+    function anchorClaim(bytes32 claimId, bytes32 dataHash, bytes32 parentHash, bytes calldata signature) external {
         require(claimId != bytes32(0), "Claim ID cannot be empty");
         require(dataHash != bytes32(0), "Data hash cannot be empty");
         require(anchors[claimId].timestamp == 0, "Claim ID already anchored");
@@ -60,18 +63,25 @@ contract DataProvenance {
             dataHash: dataHash,
             owner: msg.sender,
             orgAddress: recoveredAddress,
-            timestamp: block.timestamp
+            timestamp: block.timestamp,
+            parentHash: parentHash
         });
 
-        emit ClaimAnchored(claimId, dataHash, recoveredAddress, msg.sender, block.timestamp);
+        emit ClaimAnchored(claimId, dataHash, recoveredAddress, msg.sender, block.timestamp, parentHash);
     }
 
     /**
      * @notice Get anchor details for a claim.
      */
-    function getAnchor(bytes32 claimId) external view returns (bytes32 dataHash, address owner, address orgAddress, uint256 timestamp) {
+    function getAnchor(bytes32 claimId) external view returns (
+        bytes32 dataHash,
+        address owner,
+        address orgAddress,
+        uint256 timestamp,
+        bytes32 parentHash
+    ) {
         Anchor memory anchor = anchors[claimId];
         require(anchor.timestamp != 0, "Claim ID not found");
-        return (anchor.dataHash, anchor.owner, anchor.orgAddress, anchor.timestamp);
+        return (anchor.dataHash, anchor.owner, anchor.orgAddress, anchor.timestamp, anchor.parentHash);
     }
 }

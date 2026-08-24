@@ -64,6 +64,8 @@ async function connectDB() {
     version: { type: Number, default: 1 },
     status: { type: String, enum: ['active', 'superseded', 'disputed'], default: 'active' },
     txHash: { type: String, required: true },
+    anchored: { type: Boolean, default: false },
+    blockchainMode: { type: String, enum: ['on-chain', 'mock'], default: 'mock' },
     timestamp: { type: Number, required: true },
     notes: { type: String, default: '' }
   });

@@ -226,6 +226,17 @@ def main():
     # Step 1: Pull/Load data records
     records = load_carbon_data()
 
+    # If seeding on an active live network like Sepolia, limit base records to 6 to save gas and transaction mining time
+    try:
+        status_res = requests.get(f"{API_URL}/status", timeout=2)
+        if status_res.status_code == 200:
+            status_data = status_res.json()
+            if status_data.get("blockchainConnected") and status_data.get("contractFound"):
+                print("Active testnet/mainnet blockchain detected. Limiting seeding to 6 base claims to save Sepolia gas and block mining time.")
+                records = records[:6]
+    except Exception as e:
+        print(f"Could not fetch status check: {str(e)}")
+
     # Step 2: Load/Generate Org Keypairs
     orgs = load_or_generate_orgs()
 

@@ -277,6 +277,8 @@ def main():
         }
 
         response = requests.post(f"{API_URL}/claims", json=post_data)
+        import time
+        time.sleep(0.4)
         if response.status_code == 201:
             res_json = response.json()
             submitted_claims.append(res_json)
@@ -343,6 +345,8 @@ def main():
         }
 
         response = requests.post(f"{API_URL}/claims/{parent['claimId']}/correct", json=post_data)
+        import time
+        time.sleep(0.4)
         if response.status_code == 201:
             corrected = response.json()
             correction_chains.append({
@@ -411,6 +415,8 @@ def main():
         }
 
         response = requests.post(f"{API_URL}/claims", json=post_data)
+        import time
+        time.sleep(0.4)
         if response.status_code == 201:
             disputed_record = response.json()
             disputed_claims.append({

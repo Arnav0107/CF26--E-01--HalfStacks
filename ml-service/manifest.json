@@ -3,122 +3,102 @@
     "seed-claim-001",
     "seed-claim-002",
     "seed-claim-003",
-    "seed-claim-004",
-    "seed-claim-006",
-    "seed-claim-007",
-    "seed-claim-008",
-    "seed-claim-010",
-    "seed-claim-012",
-    "seed-claim-013",
-    "seed-claim-015",
     "seed-claim-016",
-    "seed-claim-020",
+    "seed-claim-017",
+    "seed-claim-018",
     "seed-claim-022",
-    "seed-claim-023",
-    "seed-claim-024",
-    "seed-claim-026",
-    "seed-claim-027",
-    "seed-claim-028",
-    "seed-claim-029",
-    "seed-claim-030",
-    "seed-claim-031",
-    "seed-claim-032",
-    "seed-claim-033",
-    "seed-claim-036",
-    "seed-claim-037",
-    "seed-claim-038",
-    "seed-claim-039"
+    "seed-claim-023"
   ],
   "correctionChains": [
     {
-      "originalClaimId": "seed-claim-014",
+      "originalClaimId": "seed-claim-021",
       "correctedClaimId": "seed-correct-001",
       "versions": [
-        "seed-claim-014",
+        "seed-claim-021",
         "seed-correct-001"
       ],
-      "notes": "Revised leakage calculation factors",
-      "deltaPercent": "-3.16%"
-    },
-    {
-      "originalClaimId": "seed-claim-005",
-      "correctedClaimId": "seed-correct-002",
-      "versions": [
-        "seed-claim-005",
-        "seed-correct-002"
-      ],
-      "notes": "Audited satellite imagery baseline adjustment",
-      "deltaPercent": "-5.3%"
-    },
-    {
-      "originalClaimId": "seed-claim-040",
-      "correctedClaimId": "seed-correct-003",
-      "versions": [
-        "seed-claim-040",
-        "seed-correct-003"
-      ],
-      "notes": "Audited satellite imagery baseline adjustment",
-      "deltaPercent": "5.52%"
-    },
-    {
-      "originalClaimId": "seed-claim-021",
-      "correctedClaimId": "seed-correct-004",
-      "versions": [
-        "seed-claim-021",
-        "seed-correct-004"
-      ],
-      "notes": "Ground-truth biomass survey calibration",
-      "deltaPercent": "6.98%"
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "5.33%"
     },
     {
       "originalClaimId": "seed-claim-019",
-      "correctedClaimId": "seed-correct-005",
+      "correctedClaimId": "seed-correct-002",
       "versions": [
         "seed-claim-019",
+        "seed-correct-002"
+      ],
+      "notes": "Audited satellite imagery baseline adjustment",
+      "deltaPercent": "6.03%"
+    },
+    {
+      "originalClaimId": "seed-claim-032",
+      "correctedClaimId": "seed-correct-003",
+      "versions": [
+        "seed-claim-032",
+        "seed-correct-003"
+      ],
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "3.41%"
+    },
+    {
+      "originalClaimId": "seed-claim-014",
+      "correctedClaimId": "seed-correct-004",
+      "versions": [
+        "seed-claim-014",
+        "seed-correct-004"
+      ],
+      "notes": "Audited satellite imagery baseline adjustment",
+      "deltaPercent": "-6.9%"
+    },
+    {
+      "originalClaimId": "seed-claim-012",
+      "correctedClaimId": "seed-correct-005",
+      "versions": [
+        "seed-claim-012",
         "seed-correct-005"
       ],
-      "notes": "Revised leakage calculation factors",
-      "deltaPercent": "-7.25%"
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "-3.33%"
     },
     {
-      "originalClaimId": "seed-claim-034",
+      "originalClaimId": "seed-claim-026",
       "correctedClaimId": "seed-correct-006",
       "versions": [
-        "seed-claim-034",
+        "seed-claim-026",
         "seed-correct-006"
       ],
-      "notes": "Ground-truth biomass survey calibration",
-      "deltaPercent": "7.85%"
+      "notes": "Methodology coefficient update for forest-canopy density",
+      "deltaPercent": "-3.66%"
     },
     {
-      "originalClaimId": "seed-claim-035",
+      "originalClaimId": "seed-claim-013",
       "correctedClaimId": "seed-correct-007",
       "versions": [
-        "seed-claim-035",
+        "seed-claim-013",
         "seed-correct-007"
       ],
-      "notes": "Ground-truth biomass survey calibration",
-      "deltaPercent": "-4.36%"
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "-7.8%"
     }
   ],
   "disputedClaims": [
     {
-      "projectId": "GS-1200",
-      "projectName": "Jiangxi Waste Heat Recovery Project",
-      "originalClaimId": "seed-claim-011",
+      "projectId": "OWID-ARG-2021",
+      "projectName": "Argentina National GHG Reduction Goal (2021)",
+      "originalClaimId": "seed-claim-020",
       "disputedClaimId": "seed-dispute-001",
-      "originalTonnage": 120000,
-      "disputedTonnage": 151371,
-      "deltaPercent": "26.14%"
+      "originalTonnage": 19019700,
+      "disputedTonnage": 23844739,
+      "deltaPercent": "25.37%"
     },
     {
-      "projectId": "GS-5200",
-      "projectName": "Ghana Community Boreholes Project",
-      "originalClaimId": "seed-claim-025",
+      "projectId": "OWID-ALG-2024",
+      "projectName": "Algeria National GHG Reduction Goal (2024)",
+      "originalClaimId": "seed-claim-015",
       "disputedClaimId": "seed-dispute-002",
-      "originalTonnage": 75000,
-      "disputedTonnage": 93081,
-      "deltaPercent": "24.11%"
+      "originalTonnage": 19820300,
+      "disputedTonnage": 23872534,
+      "deltaPercent": "20.44%"
     }
   ]
 }

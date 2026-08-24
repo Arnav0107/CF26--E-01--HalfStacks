@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, LayoutDashboard, PlusCircle } from 'lucide-react';
 import DashboardStats from './components/DashboardStats';
 import ClaimsDirectory from './components/ClaimsDirectory';
 import ClaimTimeline from './components/ClaimTimeline';
 import DisputesPanel from './components/DisputesPanel';
 import TamperLab from './components/TamperLab';
+import SubmitClaimForm from './components/SubmitClaimForm';
 
 const API_URL = "http://localhost:5000/api";
 
@@ -176,6 +177,17 @@ export default function App() {
                 <FlaskConical className="h-4 w-4" />
                 Tamper Lab
               </button>
+              <button
+                onClick={() => setActiveTab('submit')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'submit' 
+                    ? 'bg-brand-500 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Submit Claim
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -200,6 +212,17 @@ export default function App() {
                 <TamperLab 
                   claims={claims} 
                   onRefreshData={fetchData} 
+                  API_URL={API_URL} 
+                />
+              )}
+              {activeTab === 'submit' && (
+                <SubmitClaimForm 
+                  claims={claims} 
+                  onSuccessSubmit={(newClaimId) => {
+                    fetchData();
+                    setSelectedClaimId(newClaimId);
+                    setActiveTab('directory');
+                  }}
                   API_URL={API_URL} 
                 />
               )}

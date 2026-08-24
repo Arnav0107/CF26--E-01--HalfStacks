@@ -8,7 +8,9 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
   const [tampering, setTampering] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verifyReport, setVerifyReport] = useState(null);
+  const [sigTamperReport, setSigTamperReport] = useState(null);
   const [statusMsg, setStatusMsg] = useState('');
+  const [tamperMode, setTamperMode] = useState('data'); // 'data' | 'signature'
 
   const activeClaims = claims.filter(c => c.status === 'active' || c.status === 'disputed');
 
@@ -18,6 +20,7 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
     if (!selectedClaimId || !tamperTonnage) return;
     setTampering(true);
     setVerifyReport(null);
+    setSigTamperReport(null);
     setStatusMsg('');
 
     try {
@@ -45,6 +48,7 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
     if (!selectedClaimId) return;
     setVerifying(true);
     setVerifyReport(null);
+    setSigTamperReport(null);
 
     try {
       const response = await fetch(`${API_URL}/claims/${selectedClaimId}/verify`);
@@ -53,6 +57,28 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
         setVerifyReport(report);
       } else {
         setStatusMsg("ERROR: Audit verification endpoint failed.");
+      }
+    } catch (e) {
+      setStatusMsg(`ERROR: Connection failed: ${e.message}`);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleVerifySignatureTamper = async () => {
+    if (!selectedClaimId) return;
+    setVerifying(true);
+    setVerifyReport(null);
+    setSigTamperReport(null);
+    setStatusMsg('');
+
+    try {
+      const response = await fetch(`${API_URL}/claims/${selectedClaimId}/verify-tampered-signature-simulation`);
+      if (response.ok) {
+        const report = await response.json();
+        setSigTamperReport(report);
+      } else {
+        setStatusMsg("ERROR: Signature simulation endpoint failed.");
       }
     } catch (e) {
       setStatusMsg(`ERROR: Connection failed: ${e.message}`);
@@ -70,19 +96,44 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
       setTamperTonnage('');
     }
     setVerifyReport(null);
+    setSigTamperReport(null);
     setStatusMsg('');
   };
 
   return (
     <div className="glass rounded-xl border border-white/5 shadow-xl p-6 h-full flex flex-col">
       <div className="border-b border-white/5 pb-4 mb-6">
-        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-          <Trash2 className="h-5 w-5 text-red-500" />
-          Interactive Tamper Lab
-        </h2>
-        <p className="text-xs text-slate-400 mt-1">
-          Simulate direct database tampering and observe how green verification audits instantly flag the mismatch.
-        </p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              Interactive Tamper Lab
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Simulate direct database tampering or signature forgery and observe how ecrecover dynamic derivation instantly flags authorship mismatch.
+            </p>
+          </div>
+
+          {/* Toggle Mode */}
+          <div className="flex bg-dark-900/50 p-1 rounded-lg border border-white/5 text-2xs font-semibold shrink-0">
+            <button
+              onClick={() => { setTamperMode('data'); setVerifyReport(null); setSigTamperReport(null); setStatusMsg(''); }}
+              className={`px-3 py-1.5 rounded transition-all ${
+                tamperMode === 'data' ? 'bg-red-500/20 text-red-400 border border-red-500/25' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Tamper Data
+            </button>
+            <button
+              onClick={() => { setTamperMode('signature'); setVerifyReport(null); setSigTamperReport(null); setStatusMsg(''); }}
+              className={`px-3 py-1.5 rounded transition-all ${
+                tamperMode === 'signature' ? 'bg-red-500/20 text-red-400 border border-red-500/25' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Tamper Signature
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-6">
@@ -107,43 +158,59 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
 
         {selectedClaim && (
           <>
-            {/* Step 2: Mutate Row */}
-            <div className="p-4 rounded-xl border border-white/5 bg-dark-800/40 space-y-3">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Step 2: Simulate Direct Database Tampering (Bypassing Signature Checks)
-              </label>
-              <p className="text-2xs text-slate-500">
-                This updates the database record directly (representing an insider attack or server vulnerability).
-              </p>
-              
-              <div className="flex gap-3">
-                <input
-                  type="number"
-                  placeholder="New Tonnage"
-                  value={tamperTonnage}
-                  onChange={(e) => setTamperTonnage(e.target.value)}
-                  className="flex-1 bg-dark-800 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500 font-mono"
-                />
-                <button
-                  onClick={handleTamper}
-                  disabled={tampering}
-                  className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {tampering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <HardDrive className="h-3.5 w-3.5" />}
-                  Mutate Data
-                </button>
-              </div>
-              
-              {statusMsg && (
-                <div className={`p-2.5 rounded text-2xs font-mono break-all ${
-                  statusMsg.startsWith('SUCCESS') 
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' 
-                    : 'bg-red-500/10 text-red-400 border border-red-500/25'
-                }`}>
-                  {statusMsg}
+            {/* Step 2: Mutate Row or Setup Sig Tamper */}
+            {tamperMode === 'data' ? (
+              <div className="p-4 rounded-xl border border-white/5 bg-dark-800/40 space-y-3">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Step 2: Simulate Direct Database Tampering (Bypassing Signature Checks)
+                </label>
+                <p className="text-2xs text-slate-500">
+                  This updates the database record directly (representing an insider attack or server vulnerability).
+                </p>
+                
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    placeholder="New Tonnage"
+                    value={tamperTonnage}
+                    onChange={(e) => setTamperTonnage(e.target.value)}
+                    className="flex-1 bg-dark-800 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-brand-500 font-mono"
+                  />
+                  <button
+                    onClick={handleTamper}
+                    disabled={tampering}
+                    className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {tampering ? <RefreshCw className="h-3 w-3 animate-spin" /> : <HardDrive className="h-3.5 w-3.5" />}
+                    Mutate Data
+                  </button>
                 </div>
-              )}
-            </div>
+                
+                {statusMsg && (
+                  <div className={`p-2.5 rounded text-2xs font-mono break-all ${
+                    statusMsg.startsWith('SUCCESS') 
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25' 
+                      : 'bg-red-500/10 text-red-400 border border-red-500/25'
+                  }`}>
+                    {statusMsg}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-white/5 bg-dark-800/40 space-y-3">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Step 2: Simulate Signature Forgery / Author Tampering (Signature Corruption)
+                </label>
+                <p className="text-2xs text-slate-500 leading-relaxed">
+                  This simulates an attacker changing the signature values to forge authorization. Because the publisher's address is dynamically derived using <strong>ecrecover</strong>, modifying even a single byte of the signature recovers a completely wrong signer address.
+                </p>
+                
+                <div className="text-3xs font-mono bg-dark-900/50 p-2.5 rounded border border-white/5 space-y-1.5">
+                  <div className="truncate"><span className="text-slate-500">Stored Publisher:</span> <span className="text-slate-300 select-all">{selectedClaim.orgId}</span></div>
+                  <div className="truncate"><span className="text-slate-500">Original Signature:</span> <span className="text-slate-400 select-all">{selectedClaim.signature}</span></div>
+                </div>
+              </div>
+            )}
 
             {/* Step 3: Run Verification */}
             <div className="space-y-3">
@@ -151,18 +218,29 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
                   Step 3: Run Integrity Audit
                 </label>
-                <button
-                  onClick={handleVerify}
-                  disabled={verifying}
-                  className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-xs font-bold text-white transition-all shadow-lg flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  {verifying ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                  Run Cryptographic Audit
-                </button>
+                {tamperMode === 'data' ? (
+                  <button
+                    onClick={handleVerify}
+                    disabled={verifying}
+                    className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-xs font-bold text-white transition-all shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {verifying ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                    Run Cryptographic Audit
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleVerifySignatureTamper}
+                    disabled={verifying}
+                    className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-bold text-white transition-all shadow-lg flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {verifying ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+                    Simulate Signature Audit
+                  </button>
+                )}
               </div>
 
               {/* Verify Result Display */}
-              {verifyReport && (
+              {tamperMode === 'data' && verifyReport && (
                 <div className={`border rounded-xl overflow-hidden transition-all duration-300 ${
                   verifyReport.isValid 
                     ? 'border-emerald-500/25 bg-emerald-500/5' 
@@ -256,6 +334,56 @@ export default function TamperLab({ claims, onRefreshData, API_URL }) {
                         </ul>
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Signature Tamper Result Display */}
+              {tamperMode === 'signature' && sigTamperReport && (
+                <div className="border border-red-500/25 bg-red-500/5 rounded-xl overflow-hidden animate-pulse-slow">
+                  <div className="px-4 py-3 flex items-center justify-between gap-2 border-b border-red-500/20 text-sm font-bold bg-red-500/10 text-red-400">
+                    <div className="flex items-center gap-2">
+                      <AlertOctagon className="h-4.5 w-4.5" />
+                      AUDIT FAIL: Signature Forgery Mismatch!
+                    </div>
+                  </div>
+
+                  <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-2 gap-4 text-xs font-mono border-b border-white/5 pb-3">
+                      <div>
+                        <span className="text-3xs text-slate-500 uppercase font-semibold">Stored Signer</span>
+                        <div className="text-slate-300 truncate mt-1 select-all" title={sigTamperReport.storedOrgAddress}>
+                          {sigTamperReport.storedOrgAddress}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-3xs text-slate-500 uppercase font-semibold">Recovered Signer (Tampered)</span>
+                        <div className="text-red-400 font-bold truncate mt-1 select-all" title={sigTamperReport.recoveredOrgAddress}>
+                          {sigTamperReport.recoveredOrgAddress}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-xs font-mono space-y-2">
+                      <div>
+                        <span className="text-slate-500">Original Signature:</span>
+                        <div className="text-slate-400 truncate bg-dark-900/50 p-2 rounded border border-white/5 select-all mt-1">{sigTamperReport.originalSignature}</div>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Tampered Signature:</span>
+                        <div className="text-red-300 font-bold truncate bg-dark-900/50 p-2 rounded border border-red-500/10 select-all mt-1">{sigTamperReport.tamperedSignature}</div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-red-500/10 border border-red-500/25 rounded-lg text-2xs text-red-300 font-mono space-y-1.5 leading-relaxed">
+                      <p className="font-bold uppercase tracking-wider text-red-400 text-[10px]">✗ Live Signature Audit Rejected</p>
+                      <p>
+                        Because the signature was tampered, the dynamic Ethereum signer recovery derived address <strong>{sigTamperReport.recoveredOrgAddress.substring(0, 12)}...</strong>, which does not match the stored publisher's address <strong>{sigTamperReport.storedOrgAddress.substring(0, 12)}...</strong>. 
+                      </p>
+                      <p className="italic text-slate-400 mt-1">
+                        This cryptographically proves that a claim's authorship cannot be forged as another organization without their private key.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}

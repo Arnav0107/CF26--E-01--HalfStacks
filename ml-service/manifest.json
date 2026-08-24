@@ -2,103 +2,105 @@
   "cleanClaims": [
     "seed-claim-001",
     "seed-claim-002",
-    "seed-claim-003",
+    "seed-claim-012",
+    "seed-claim-013",
     "seed-claim-016",
     "seed-claim-017",
-    "seed-claim-018",
-    "seed-claim-022",
+    "seed-claim-019",
+    "seed-claim-020",
+    "seed-claim-021",
     "seed-claim-023"
   ],
   "correctionChains": [
     {
-      "originalClaimId": "seed-claim-021",
+      "originalClaimId": "seed-claim-028",
       "correctedClaimId": "seed-correct-001",
       "versions": [
-        "seed-claim-021",
+        "seed-claim-028",
         "seed-correct-001"
       ],
       "notes": "Sensor recalibration for July auditing cycle",
-      "deltaPercent": "5.33%"
+      "deltaPercent": "-7.99%"
     },
     {
-      "originalClaimId": "seed-claim-019",
+      "originalClaimId": "seed-claim-006",
       "correctedClaimId": "seed-correct-002",
       "versions": [
-        "seed-claim-019",
+        "seed-claim-006",
         "seed-correct-002"
       ],
       "notes": "Audited satellite imagery baseline adjustment",
-      "deltaPercent": "6.03%"
+      "deltaPercent": "-4.33%"
     },
     {
-      "originalClaimId": "seed-claim-032",
+      "originalClaimId": "seed-claim-022",
       "correctedClaimId": "seed-correct-003",
       "versions": [
-        "seed-claim-032",
+        "seed-claim-022",
         "seed-correct-003"
       ],
       "notes": "Methodology coefficient update for forest-canopy density",
-      "deltaPercent": "3.41%"
+      "deltaPercent": "-4.51%"
     },
     {
-      "originalClaimId": "seed-claim-014",
+      "originalClaimId": "seed-claim-015",
       "correctedClaimId": "seed-correct-004",
       "versions": [
-        "seed-claim-014",
+        "seed-claim-015",
         "seed-correct-004"
       ],
-      "notes": "Audited satellite imagery baseline adjustment",
-      "deltaPercent": "-6.9%"
+      "notes": "Sensor recalibration for July auditing cycle",
+      "deltaPercent": "-7.68%"
     },
     {
-      "originalClaimId": "seed-claim-012",
+      "originalClaimId": "seed-claim-018",
       "correctedClaimId": "seed-correct-005",
       "versions": [
-        "seed-claim-012",
+        "seed-claim-018",
         "seed-correct-005"
       ],
-      "notes": "Methodology coefficient update for forest-canopy density",
-      "deltaPercent": "-3.33%"
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "-3.24%"
     },
     {
-      "originalClaimId": "seed-claim-026",
+      "originalClaimId": "seed-claim-029",
       "correctedClaimId": "seed-correct-006",
       "versions": [
-        "seed-claim-026",
+        "seed-claim-029",
         "seed-correct-006"
       ],
-      "notes": "Methodology coefficient update for forest-canopy density",
-      "deltaPercent": "-3.66%"
+      "notes": "Revised leakage calculation factors",
+      "deltaPercent": "-5.06%"
     },
     {
-      "originalClaimId": "seed-claim-013",
+      "originalClaimId": "seed-claim-033",
       "correctedClaimId": "seed-correct-007",
       "versions": [
-        "seed-claim-013",
+        "seed-claim-033",
         "seed-correct-007"
       ],
       "notes": "Revised leakage calculation factors",
-      "deltaPercent": "-7.8%"
+      "deltaPercent": "4.89%"
     }
   ],
   "disputedClaims": [
     {
-      "projectId": "OWID-ARG-2021",
-      "projectName": "Argentina National GHG Reduction Goal (2021)",
-      "originalClaimId": "seed-claim-020",
+      "projectId": "OWID-AFG-2024",
+      "projectName": "Afghanistan National GHG Reduction Goal (2024)",
+      "originalClaimId": "seed-claim-003",
       "disputedClaimId": "seed-dispute-001",
-      "originalTonnage": 19019700,
-      "disputedTonnage": 23844739,
-      "deltaPercent": "25.37%"
+      "originalTonnage": 1082600,
+      "disputedTonnage": 866929,
+      "deltaPercent": "-19.92%"
     },
     {
-      "projectId": "OWID-ALG-2024",
-      "projectName": "Algeria National GHG Reduction Goal (2024)",
-      "originalClaimId": "seed-claim-015",
+      "projectId": "OWID-ALG-2023",
+      "projectName": "Algeria National GHG Reduction Goal (2023)",
+      "originalClaimId": "seed-claim-014",
       "disputedClaimId": "seed-dispute-002",
-      "originalTonnage": 19820300,
-      "disputedTonnage": 23872534,
-      "deltaPercent": "20.44%"
+      "originalTonnage": 20284700,
+      "disputedTonnage": 14965983,
+      "deltaPercent": "-26.22%"
     }
   ]
 }

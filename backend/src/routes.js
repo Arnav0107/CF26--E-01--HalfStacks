@@ -3,6 +3,27 @@ const router = express.Router();
 const { db } = require('./database');
 const cryptoHelper = require('./crypto');
 const blockchain = require('./blockchain');
+const { ethers } = require('ethers');
+const demoOrgs = require('./demoOrgs');
+
+// Register demo orgs in DB
+async function registerDemoOrgs() {
+  for (const org of demoOrgs) {
+    try {
+      const existing = await db.getOrgById(org.id);
+      if (!existing) {
+        await db.saveOrg({
+          orgId: org.id.toLowerCase(),
+          name: org.displayName,
+          publicKey: org.id
+        });
+      }
+    } catch (err) {
+      console.error("Failed to seed demo org:", err);
+    }
+  }
+}
+registerDemoOrgs();
 
 /**
  * Helper to check disputes for a project.
@@ -401,6 +422,106 @@ router.get('/claims/:id/verify', async (req, res) => {
 });
 
 /**
+ * GET /claims/:id/verify-signer
+ * Live cryptographic re-derivation endpoint.
+ * Recovers signer address from the signature live, and returns comparisons.
+ */
+router.get('/claims/:id/verify-signer', async (req, res) => {
+  try {
+    const claim = await db.getClaimById(req.params.id);
+    if (!claim) {
+      return res.status(404).json({ error: `Claim ${req.params.id} not found` });
+    }
+
+    // 1. Recompute canonical form and data hash
+    const canonical = cryptoHelper.canonicalizeClaim(claim);
+    const dataHash = cryptoHelper.hashText(canonical);
+
+    // 2. Perform live ecrecover using ethers
+    let recoveredOrgAddress = "";
+    let signatureValid = false;
+    try {
+      const hashHex = dataHash.startsWith('0x') ? dataHash : '0x' + dataHash;
+      const sigHex = claim.signature.startsWith('0x') ? claim.signature : '0x' + claim.signature;
+      const messageBytes = ethers.getBytes(hashHex);
+      recoveredOrgAddress = ethers.verifyMessage(messageBytes, sigHex);
+      signatureValid = recoveredOrgAddress.toLowerCase() === claim.orgId.toLowerCase();
+    } catch (err) {
+      recoveredOrgAddress = "Invalid signature formatting / Cannot recover";
+      signatureValid = false;
+    }
+
+    res.json({
+      claimId: claim.claimId,
+      rawSignature: claim.signature,
+      dataHash,
+      storedOrgAddress: claim.orgId,
+      recoveredOrgAddress,
+      signatureValid
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /claims/:id/verify-tampered-signature-simulation
+ * Simulation endpoint for signature corruption.
+ * Flips a character in the signature, runs ecrecover, and returns comparison.
+ */
+router.get('/claims/:id/verify-tampered-signature-simulation', async (req, res) => {
+  try {
+    const claim = await db.getClaimById(req.params.id);
+    if (!claim) {
+      return res.status(404).json({ error: `Claim ${req.params.id} not found` });
+    }
+
+    // 1. Recompute canonical form and data hash
+    const canonical = cryptoHelper.canonicalizeClaim(claim);
+    const dataHash = cryptoHelper.hashText(canonical);
+
+    // 2. Controlled signature corruption (flip a character)
+    const originalSignature = claim.signature;
+    const prefix = originalSignature.startsWith('0x') ? '0x' : '';
+    const rawHex = originalSignature.startsWith('0x') ? originalSignature.substring(2) : originalSignature;
+    
+    let tamperedSignature = originalSignature;
+    if (rawHex.length > 10) {
+      const charArray = rawHex.split('');
+      const originalChar = charArray[8];
+      const newChar = originalChar === 'a' ? 'b' : 'a';
+      charArray[8] = newChar;
+      tamperedSignature = prefix + charArray.join('');
+    }
+
+    // 3. Rerun ecrecover with corrupted signature
+    let recoveredOrgAddress = "";
+    let signatureValid = false;
+    try {
+      const hashHex = dataHash.startsWith('0x') ? dataHash : '0x' + dataHash;
+      const sigHex = tamperedSignature.startsWith('0x') ? tamperedSignature : '0x' + tamperedSignature;
+      const messageBytes = ethers.getBytes(hashHex);
+      recoveredOrgAddress = ethers.verifyMessage(messageBytes, sigHex);
+      signatureValid = recoveredOrgAddress.toLowerCase() === claim.orgId.toLowerCase();
+    } catch (err) {
+      recoveredOrgAddress = "Invalid signature formatting / Cannot recover";
+      signatureValid = false;
+    }
+
+    res.json({
+      claimId: claim.claimId,
+      originalSignature,
+      tamperedSignature,
+      storedOrgAddress: claim.orgId,
+      recoveredOrgAddress,
+      signatureValid
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /claims
  * Returns all claims (active/superseded/disputed). Supports filtering by projectId.
  */
@@ -502,6 +623,140 @@ router.get('/status', async (req, res) => {
       contractFound: status.contractFound
     });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /demo-orgs
+ * Returns safe details of mock organizations.
+ */
+router.get('/demo-orgs', (req, res) => {
+  try {
+    const safeOrgs = demoOrgs.map(org => ({
+      id: org.id,
+      displayName: org.displayName
+    }));
+    res.json(safeOrgs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /claims/submit-demo
+ * Submits a new claim signed on-the-fly using Anvil's test keys.
+ */
+router.post('/claims/submit-demo', async (req, res) => {
+  try {
+    const { projectName, region, tonnage, methodology, parentClaimId, demoOrgId } = req.body;
+
+    if (!projectName || !region || tonnage === undefined || !methodology || !demoOrgId) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const demoOrg = demoOrgs.find(org => org.id.toLowerCase() === demoOrgId.toLowerCase());
+    if (!demoOrg) {
+      return res.status(400).json({ error: `Demo organization ID ${demoOrgId} not found` });
+    }
+
+    let projectId;
+    let projectType = methodology;
+    let parentHash = null;
+    let version = 1;
+    let parentClaim = null;
+
+    if (parentClaimId) {
+      parentClaim = await db.getClaimById(parentClaimId);
+      if (!parentClaim) {
+        return res.status(404).json({ error: `Parent claim ${parentClaimId} not found` });
+      }
+      if (parentClaim.status === 'superseded') {
+        return res.status(400).json({ error: `Parent claim ${parentClaimId} is already superseded` });
+      }
+      if (parentClaim.orgId.toLowerCase() !== demoOrg.id.toLowerCase()) {
+        return res.status(403).json({ error: "Only the submitting organization can correct this claim" });
+      }
+
+      projectId = parentClaim.projectId;
+      parentHash = parentClaim.hash;
+      version = parentClaim.version + 1;
+      projectType = parentClaim.projectType; // Lock type to match parent
+    } else {
+      projectId = "DEMO-" + Math.floor(100000 + Math.random() * 900000);
+    }
+
+    const claimId = parentClaimId
+      ? "demo-correct-" + Date.now().toString().slice(-4) + Math.floor(10 + Math.random() * 90)
+      : "demo-claim-" + Date.now().toString().slice(-4) + Math.floor(10 + Math.random() * 90);
+
+    const claimPayload = {
+      projectId,
+      projectName,
+      region,
+      projectType,
+      tonnage: Number(tonnage),
+      orgId: demoOrg.id,
+      parentHash: parentHash
+    };
+
+    // 1. Canonicalize
+    const canonical = cryptoHelper.canonicalizeClaim(claimPayload);
+
+    // 2. Hash
+    const hash = cryptoHelper.hashText(canonical);
+
+    // 3. Generate signature using demo account key
+    const wallet = new ethers.Wallet(demoOrg.privateKey);
+    const messageBytes = ethers.getBytes(hash.startsWith('0x') ? hash : '0x' + hash);
+    const signature = await wallet.signMessage(messageBytes);
+
+    // 4. Ensure organization is mapped locally
+    const existingOrg = await db.getOrgById(demoOrg.id);
+    if (!existingOrg) {
+      await db.saveOrg({
+        orgId: demoOrg.id.toLowerCase(),
+        name: demoOrg.displayName,
+        publicKey: demoOrg.id
+      });
+    }
+
+    // 5. Anchor on contract
+    const anchorResult = await blockchain.anchorClaim(claimId, hash, parentHash, signature);
+
+    // 6. If correction, mark parent superseded
+    if (parentClaimId) {
+      await db.updateClaimStatus(parentClaimId, 'superseded');
+    }
+
+    // 7. Save claim
+    await db.saveClaim({
+      claimId,
+      projectId,
+      projectName,
+      region,
+      projectType,
+      tonnage: Number(tonnage),
+      orgId: demoOrg.id,
+      hash,
+      signature,
+      parentHash: parentHash,
+      version,
+      status: 'active',
+      txHash: anchorResult.txHash,
+      anchored: anchorResult.anchored,
+      blockchainMode: anchorResult.mode,
+      timestamp: Date.now(),
+      notes: parentClaimId ? "Dynamic Web Correction" : "Dynamic Web Initial Claim"
+    });
+
+    // 8. Check/resolve disputes
+    await resolveDisputesForProject(projectId);
+
+    const finalClaim = await db.getClaimById(claimId);
+    res.status(201).json(finalClaim);
+  } catch (err) {
+    console.error("Error creating demo claim:", err);
     res.status(500).json({ error: err.message });
   }
 });

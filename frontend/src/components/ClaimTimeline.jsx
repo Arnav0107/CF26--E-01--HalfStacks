@@ -1,11 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { GitBranch, Clock, Key, ShieldAlert, FileSignature, CheckCircle2 } from 'lucide-react';
+import { GitBranch, Clock, Key, ShieldAlert, FileSignature, CheckCircle2, Loader2 } from 'lucide-react';
 import MockWarningBadge from './MockWarningBadge';
 
 export default function ClaimTimeline({ claimId, claims, API_URL }) {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(false);
   const [auditReport, setAuditReport] = useState(null);
+  const [signerVerification, setSignerVerification] = useState({});
+
+  const handleVerifySigner = async (targetClaimId) => {
+    // Set loading state
+    setSignerVerification(prev => ({
+      ...prev,
+      [targetClaimId]: { loading: true }
+    }));
+
+    try {
+      const res = await fetch(`${API_URL}/claims/${targetClaimId}/verify-signer`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to verify signer");
+      
+      setSignerVerification(prev => ({
+        ...prev,
+        [targetClaimId]: {
+          rawSignature: data.rawSignature,
+          dataHash: data.dataHash,
+          storedOrgAddress: data.storedOrgAddress,
+          recoveredOrgAddress: data.recoveredOrgAddress,
+          signatureValid: data.signatureValid,
+          loading: false
+        }
+      }));
+    } catch (err) {
+      console.error(err);
+      setSignerVerification(prev => ({
+        ...prev,
+        [targetClaimId]: {
+          rawSignature: "Error",
+          dataHash: "Error",
+          storedOrgAddress: "Error",
+          recoveredOrgAddress: err.message,
+          signatureValid: false,
+          loading: false
+        }
+      }));
+    }
+  };
 
   // Re-build timeline chain whenever claimId or claims list changes
   useEffect(() => {
@@ -214,6 +254,70 @@ export default function ClaimTimeline({ claimId, claims, API_URL }) {
                           {fullRecord.txHash ? `${fullRecord.txHash.substring(0, 10)}...` : 'None'}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Live Signer Re-recovery Panel */}
+                    <div className="mt-3 pt-2.5 border-t border-dashed border-white/5 flex flex-col gap-1.5 text-3xs font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Dynamic Signer Check:</span>
+                        {signerVerification[version.claimId] ? (
+                          <button
+                            onClick={() => handleVerifySigner(version.claimId)}
+                            className="text-[9px] px-1.5 py-0.5 rounded border border-white/10 hover:border-white/20 text-slate-400 font-mono transition-all"
+                          >
+                            Re-Verify
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleVerifySigner(version.claimId)}
+                            className="text-[9px] px-2 py-0.5 rounded border border-brand-500/20 bg-brand-500/5 hover:bg-brand-500/15 text-brand-400 font-mono font-semibold transition-all flex items-center gap-1"
+                          >
+                            Verify Signer
+                          </button>
+                        )}
+                      </div>
+
+                      {signerVerification[version.claimId] && (
+                        <div className="bg-dark-900/40 p-2 rounded-lg border border-white/5 space-y-1.5 mt-1 text-[10px] text-slate-400">
+                          {signerVerification[version.claimId].loading ? (
+                            <div className="flex items-center gap-1 text-slate-500 py-1">
+                              <Loader2 className="h-3 w-3 animate-spin text-brand-500" />
+                              Recovering address via ecrecover...
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="truncate flex justify-between gap-2">
+                                <span className="text-slate-500">Signature:</span>
+                                <span className="text-slate-300 max-w-[150px] truncate select-all">{signerVerification[version.claimId].rawSignature}</span>
+                              </div>
+                              <div className="truncate flex justify-between gap-2">
+                                <span className="text-slate-500">Data Hash:</span>
+                                <span className="text-slate-300 max-w-[150px] truncate select-all">{signerVerification[version.claimId].dataHash}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-slate-500">Recovered:</span>
+                                <span className="text-white font-bold select-all">{signerVerification[version.claimId].recoveredOrgAddress.substring(0, 14)}...</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span className="text-slate-500">Stored:</span>
+                                <span className="text-white font-bold select-all">{signerVerification[version.claimId].storedOrgAddress.substring(0, 14)}...</span>
+                              </div>
+                              <div className="pt-1.5 border-t border-white/5 flex justify-between items-center">
+                                <span className="text-slate-500">Live ecrecover Check:</span>
+                                {signerVerification[version.claimId].signatureValid ? (
+                                  <span className="px-1 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 font-bold uppercase text-[8px] tracking-wider">
+                                    ✓ Signature Match
+                                  </span>
+                                ) : (
+                                  <span className="px-1 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/25 font-bold uppercase text-[8px] tracking-wider animate-pulse">
+                                    ✗ Mismatch
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

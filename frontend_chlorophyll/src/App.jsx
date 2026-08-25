@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, PlusCircle, Search, ArrowLeft, Award, HelpCircle } from 'lucide-react';
+import { Database, RefreshCw, GitCommit, ShieldAlert, FlaskConical, PlusCircle, Search, ArrowLeft } from 'lucide-react';
 import HeroJellyfishVisual from './components/HeroJellyfishVisual';
 import DashboardStats from './components/DashboardStats';
 import ClaimsDirectory from './components/ClaimsDirectory';
@@ -8,12 +8,8 @@ import DisputesPanel from './components/DisputesPanel';
 import TamperLab from './components/TamperLab';
 import SubmitClaimForm from './components/SubmitClaimForm';
 import UpdateClaimForm from './components/UpdateClaimForm';
-import ProvenanceGraphModal from './components/ProvenanceGraphModal';
-import ComplianceDashboard from './components/ComplianceDashboard';
-import OracleTelemetryModal from './components/OracleTelemetryModal';
 
-const API_URL = import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
+const API_URL = "http://localhost:5000/api";
 
 /* ─── Brand Icon Logo ────────────────────────────────────────── */
 function ChlorophyllLogo({ className = "w-6 h-6" }) {
@@ -39,16 +35,19 @@ function BlueCheck() {
 
 /* ─── Landing Page View ──────────────────────────────────────── */
 function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }) {
+  // Use dynamic values if available, otherwise display reference metrics
   const displayClaimsCount = claims.length > 0 ? claims.length.toString() : "0";
   const totalTonnage = claims.reduce((s, c) => s + (Number(c.tonnage) || 0), 0);
   const displayTonnage = totalTonnage > 0 
     ? (totalTonnage / 1_000_000).toFixed(1) + "M"
-    : "0M";
-  const displayDisputes = disputes.length > 0 ? disputes.length.toString() : "0";
+    : "27736.5M";
+  const displayDisputes = disputes.length > 0 ? disputes.length.toString() : "24";
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{overflowX: 'clip'}}>
-      {/* TOP NAVIGATION BAR */}
+      {/* ══════════════════════════════════════════════════════
+          TOP NAVIGATION BAR
+      ══════════════════════════════════════════════════════ */}
       <header className="relative z-50 flex items-center justify-between px-6 sm:px-12 py-5 max-w-[1440px] mx-auto w-full">
         {/* Left: Brand */}
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={onEnterDashboard}>
@@ -90,15 +89,18 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
         </div>
       </header>
 
-      {/* HERO SECTION */}
+      {/* ══════════════════════════════════════════════════════
+          HERO SECTION (2-COLUMN COMPOSITION)
+      ══════════════════════════════════════════════════════ */}
       <main className="flex-1 max-w-[1440px] mx-auto w-full px-6 sm:px-12 pt-4 pb-12 flex flex-col gap-10" style={{overflow: 'visible'}}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start" style={{overflow: 'visible'}}>
           
           {/* Left Column: Metrics, Main Title, CTAs */}
           <div className="lg:col-span-6 flex flex-col justify-center pr-0 lg:pr-6">
             
-            {/* Top Row: 2 KPI Cards */}
+            {/* Top Row: 2 KPI Cards (Claims Verified + Volume Tracked) */}
             <div className="grid grid-cols-2 gap-4 max-w-[480px]">
+              {/* Claims Verified */}
               <div className="card-maroon-tint rounded-2xl p-5 transition-all hover:shadow-clean-hover">
                 <span className="block text-[10px] font-bold text-[#7A1028] uppercase tracking-wider font-sans">
                   CLAIMS VERIFIED
@@ -108,6 +110,7 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
                 </span>
               </div>
 
+              {/* Volume Tracked */}
               <div className="card-maroon-tint rounded-2xl p-5 transition-all hover:shadow-clean-hover">
                 <span className="block text-[10px] font-bold text-[#7A1028] uppercase tracking-wider font-sans">
                   VOLUME TRACKED
@@ -149,6 +152,7 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
 
             {/* Bottom Row: 2 KPI Cards (Active Disputes + Integrity Score) */}
             <div className="grid grid-cols-2 gap-4 max-w-[480px] mt-8">
+              {/* Active Disputes */}
               <div className="card-blue-tint rounded-2xl p-5 transition-all hover:shadow-clean-hover">
                 <span className="block text-[10px] font-bold text-[#1677E8] uppercase tracking-wider font-sans">
                   ACTIVE DISPUTES
@@ -158,6 +162,7 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
                 </span>
               </div>
 
+              {/* Integrity Score */}
               <div className="card-blue-tint rounded-2xl p-5 transition-all hover:shadow-clean-hover">
                 <span className="block text-[10px] font-bold text-[#1677E8] uppercase tracking-wider font-sans">
                   INTEGRITY SCORE
@@ -170,12 +175,17 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
 
           </div>
 
-          {/* Right Column: Jellyfish */}
+          {/* Right Column: Jellyfish floats freely, no clipping container */}
           <div
             className="lg:col-span-6 relative"
             style={{
               minHeight: '520px',
               overflow: 'visible',
+              /*
+               * The jellyfish image is positioned absolute inside HeroJellyfishVisual
+               * with top:-60px right:-60px so it extends beyond the column safely.
+               * Do NOT add overflow:hidden here.
+               */
             }}
           >
             <HeroJellyfishVisual />
@@ -183,9 +193,12 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
 
         </div>
 
-        {/* REAL-TIME AUTHENTICITY & DATA PACKET SECTION */}
+        {/* ══════════════════════════════════════════════════════
+            REAL-TIME AUTHENTICITY & DATA PACKET SECTION
+        ══════════════════════════════════════════════════════ */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mt-4">
           
+          {/* Left Panel: Real-time Authenticity Description */}
           <div className="lg:col-span-4 bg-white/95 rounded-2xl p-7 border border-[#8DB7F5]/30 shadow-clean flex flex-col justify-between">
             <div>
               <h2 className="font-brand font-bold text-2xl sm:text-3xl text-[#7A1028] mb-3.5 tracking-tight">
@@ -202,7 +215,9 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
             </div>
           </div>
 
+          {/* Right Panel: Data Packet Verification Breakdown */}
           <div className="lg:col-span-8 bg-white/95 rounded-2xl p-7 border border-[#8DB7F5]/30 shadow-clean flex flex-col justify-between">
+            {/* Header */}
             <div className="flex items-center justify-between pb-3.5 border-b border-[#EAF2FC]">
               <span className="font-sans font-bold text-xs tracking-wider text-[#1677E8] uppercase">
                 DATA PACKET #8G2-A
@@ -212,17 +227,21 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
               </span>
             </div>
 
+            {/* Verification Rows */}
             <div className="divide-y divide-[#EAF2FC] text-sm font-sans font-medium text-[#172A63]">
+              {/* Row 1 */}
               <div className="py-3.5 flex items-center justify-between">
                 <span>Source Signature</span>
                 <BlueCheck />
               </div>
 
+              {/* Row 2 */}
               <div className="py-3.5 flex items-center justify-between">
                 <span>Historical Continuity</span>
                 <BlueCheck />
               </div>
 
+              {/* Row 3 */}
               <div className="py-3.5 flex items-center justify-between">
                 <span>Cryptographic Hash</span>
                 <div className="flex items-center gap-4">
@@ -231,14 +250,16 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
                 </div>
               </div>
 
+              {/* Row 4 */}
               <div className="py-3.5 flex items-center justify-between">
                 <span>Timestamp</span>
                 <div className="flex items-center gap-4">
-                  <span className="font-mono text-xs text-[#172A63]">2025-06-15 12:00:00 UTC</span>
+                  <span className="font-mono text-xs text-[#172A63]">2024-05-19 14:32:11 UTC</span>
                   <BlueCheck />
                 </div>
               </div>
 
+              {/* Row 5 */}
               <div className="py-3.5 flex items-center justify-between">
                 <span>Network Validation</span>
                 <BlueCheck />
@@ -249,6 +270,9 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
         </section>
       </main>
 
+      {/* ══════════════════════════════════════════════════════
+          FOOTER
+      ══════════════════════════════════════════════════════ */}
       <footer className="mt-auto py-6 px-6 sm:px-12 border-t border-[#E5E7EB]/80 max-w-[1440px] mx-auto w-full flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-[#5E6B8A]">
         <div className="flex items-center gap-2">
           <ChlorophyllLogo className="w-4 h-4 shrink-0" />
@@ -268,28 +292,15 @@ function LandingPage({ claims, disputes, onEnterDashboard, blockchainConnected }
 }
 
 /* ─── Dashboard View (Network Explorer & Verification Console) ─── */
-function DashboardView({ 
-  claims, 
-  disputes, 
-  loading, 
-  error, 
-  blockchainConnected, 
-  contractFound, 
-  fetchData, 
-  onGoHome,
-  selectedClaimId,
-  setSelectedClaimId,
-  setGraphClaimModal,
-  setOracleModalClaim,
-  activeTab,
-  setActiveTab
-}) {
+function DashboardView({ claims, disputes, loading, error, blockchainConnected, contractFound, fetchData, onGoHome }) {
+  const [selectedClaimId, setSelectedClaimId] = useState('');
+  const [activeTab, setActiveTab] = useState('directory');
 
   useEffect(() => {
     if (claims.length > 0 && !selectedClaimId) {
       setSelectedClaimId(claims[0].claimId);
     }
-  }, [claims, selectedClaimId, setSelectedClaimId]);
+  }, [claims]);
 
   const handleSelectClaim = (claimId) => setSelectedClaimId(claimId);
 
@@ -297,13 +308,12 @@ function DashboardView({
     { id: 'directory', icon: <Database className="h-4 w-4" />, label: 'Claims Directory' },
     { id: 'disputes', icon: <ShieldAlert className="h-4 w-4" />, label: 'Disputes', badge: disputes.length },
     { id: 'tamper', icon: <FlaskConical className="h-4 w-4" />, label: 'Tamper Lab' },
-    { id: 'compliance', icon: <Award className="h-4 w-4" />, label: 'Regulatory Compliance' },
     { id: 'submit', icon: <PlusCircle className="h-4 w-4" />, label: 'Submit Claim' },
     { id: 'update', icon: <GitCommit className="h-4 w-4" />, label: 'Update Claim' },
   ];
 
   return (
-    <div className="theme-light min-h-screen flex flex-col bg-[#FAF9F7] text-navy">
+    <div className="min-h-screen flex flex-col bg-[#FAF9F7]">
       {/* Dashboard Top Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB] px-6 sm:px-12 py-4">
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
@@ -384,12 +394,7 @@ function DashboardView({
                   claims={claims}
                   onSelectClaim={handleSelectClaim}
                   selectedClaimId={selectedClaimId}
-                  onViewProvenanceGraph={(claim) => setGraphClaimModal(claim)}
-                  onViewOracleModal={(claim) => setOracleModalClaim(claim)}
                 />
-              )}
-              {activeTab === 'compliance' && (
-                <ComplianceDashboard claims={claims} />
               )}
               {activeTab === 'disputes' && (
                 <DisputesPanel
@@ -398,8 +403,6 @@ function DashboardView({
                     handleSelectClaim(id);
                     setActiveTab('directory');
                   }}
-                  onRefreshData={fetchData}
-                  API_URL={API_URL}
                 />
               )}
               {activeTab === 'tamper' && (
@@ -440,7 +443,6 @@ function DashboardView({
               claimId={selectedClaimId}
               claims={claims}
               API_URL={API_URL}
-              onViewProvenanceGraph={(claim) => setGraphClaimModal(claim)}
             />
           </div>
         </div>
@@ -458,14 +460,10 @@ export default function App() {
   const [view, setView] = useState('landing'); // 'landing' | 'dashboard'
   const [claims, setClaims] = useState([]);
   const [disputes, setDisputes] = useState([]);
-  const [selectedClaimId, setSelectedClaimId] = useState('');
-  const [activeTab, setActiveTab] = useState('directory');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [blockchainConnected, setBlockchainConnected] = useState(false);
   const [contractFound, setContractFound] = useState(false);
-  const [graphClaimModal, setGraphClaimModal] = useState(null);
-  const [oracleModalClaim, setOracleModalClaim] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -512,40 +510,15 @@ export default function App() {
   }
 
   return (
-    <>
-      <DashboardView
-        claims={claims}
-        disputes={disputes}
-        loading={loading}
-        error={error}
-        blockchainConnected={blockchainConnected}
-        contractFound={contractFound}
-        fetchData={fetchData}
-        onGoHome={() => setView('landing')}
-        selectedClaimId={selectedClaimId}
-        setSelectedClaimId={setSelectedClaimId}
-        setGraphClaimModal={setGraphClaimModal}
-        setOracleModalClaim={setOracleModalClaim}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
-
-      {/* Provenance Lineage Graph Modal */}
-      {graphClaimModal && (
-        <ProvenanceGraphModal
-          claim={graphClaimModal}
-          API_URL={API_URL}
-          onClose={() => setGraphClaimModal(null)}
-        />
-      )}
-
-      {/* Oracle Telemetry Verification Modal */}
-      {oracleModalClaim && (
-        <OracleTelemetryModal
-          claim={oracleModalClaim}
-          onClose={() => setOracleModalClaim(null)}
-        />
-      )}
-    </>
+    <DashboardView
+      claims={claims}
+      disputes={disputes}
+      loading={loading}
+      error={error}
+      blockchainConnected={blockchainConnected}
+      contractFound={contractFound}
+      fetchData={fetchData}
+      onGoHome={() => setView('landing')}
+    />
   );
 }

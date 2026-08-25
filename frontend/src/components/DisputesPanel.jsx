@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, AlertTriangle, CheckCircle2, Gavel, RefreshCw } from 'lucide-react';
 
-export default function DisputesPanel({ claims, onInspectClaim, onRefreshData, API_URL = "http://localhost:5000/api" }) {
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
+
+export default function DisputesPanel({ claims, onInspectClaim, onRefreshData, API_URL = DEFAULT_API_URL }) {
   const [demoOrgs, setDemoOrgs] = useState([]);
   const [selectedDemoOrg, setSelectedDemoOrg] = useState('');
   const [resolutionReason, setResolutionReason] = useState('');

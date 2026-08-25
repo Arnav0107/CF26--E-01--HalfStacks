@@ -9,7 +9,8 @@ export default function ProvenanceGraphModal({ claim, API_URL, onClose }) {
   useEffect(() => {
     if (!claim) return;
     setLoading(true);
-    fetch(`${API_URL || 'http://localhost:5000'}/api/claims/${claim.claimId}/provenance-graph`)
+    const baseUrl = (API_URL || (import.meta.env.DEV ? "http://localhost:5000" : "")).replace(/\/api$/, '');
+    fetch(`${baseUrl}/api/claims/${claim.claimId}/provenance-graph`)
       .then(res => res.json())
       .then(data => {
         setGraphData(data);

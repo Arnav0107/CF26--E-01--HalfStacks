@@ -20,7 +20,7 @@ except ImportError:
     print("Error: 'requests' package is not installed. Please run: pip install eth-account requests")
     sys.exit(1)
 
-API_URL = "http://localhost:5000/api"
+API_URL = os.environ.get("API_URL") or "http://localhost:5000/api"
 KEYSTORE_PATH = os.path.join(os.path.dirname(__file__), "keystore.json")
 MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "manifest.json")
 
